@@ -1,0 +1,23 @@
+name = "nizam-snu-platform"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Pages configuration
+pages_build_output_dir = ".vercel/output/static"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "nizam-snu-db"
+database_id = "YOUR_D1_DATABASE_ID"  # Replace after creating D1 database
+
+# R2 Storage
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "nizam-snu-storage"
+preview_bucket_name = "nizam-snu-storage-preview"
+
+# Environment variables (set in Cloudflare Dashboard)
+# NEXT_PUBLIC_APP_URL
+# BETTER_AUTH_SECRET
+# RESEND_API_KEY

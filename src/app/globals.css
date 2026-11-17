@@ -1,0 +1,448 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ─────────────────────────────────────────────────────────────
+   DESIGN SYSTEM — Premium GOLD + BLACK
+   - Every legacy token alias is preserved and re-mapped to the
+     gold palette so existing pages keep working untouched.
+   - Accent aliases intentionally collapse into the gold family:
+     blue→primary gold, electric→bright gold, purple→bronze,
+     cyan→champagne, pink→amber. No blue / purple / orange hues.
+   - New tokens expose matching Tailwind utilities automatically.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  /* ---- New foundational palette → bg-bg-base, bg-surface-card, ... ---- */
+  --color-bg-base: #070706;
+  --color-bg-secondary: #0e0d0b;
+  --color-surface-deep: #14120f;
+  --color-surface-card: #1a1713;
+  --color-surface-elevated: #221e18;
+  --color-accent-violet: #c9a227; /* deep warm gold */
+  --color-text-muted: #837962;
+
+  /* ---- Legacy aliases → remapped to gold (DO NOT RENAME) ---- */
+  --color-background: #070706;
+  --color-surface: #0e0d0b;
+  --color-surface-light: #221e18;
+  --color-border: #39311f;
+  --color-text-primary: #f7f1e3; /* warm ivory */
+  --color-text-secondary: #b3a688;
+  --color-accent-blue: #d4af37; /* primary gold */
+  --color-accent-electric: #f5d67b; /* bright gold */
+  --color-accent-purple: #c99a3b; /* bronze */
+  --color-accent-cyan: #e8c66a; /* soft champagne */
+  --color-accent-pink: #d9a94a; /* amber */
+  --color-success: #34d399; /* semantic green — kept readable */
+  --color-warning: #fbbf24; /* semantic amber — kept readable */
+  --color-error: #fb7185; /* semantic red — kept readable */
+
+  /* ---- Typography: wired to the next/font variables set on <html> ---- */
+  --font-sans: var(--font-inter, ui-sans-serif), system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk, ui-sans-serif), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono, ui-monospace), ui-monospace, SFMono-Regular,
+    Menlo, monospace;
+}
+
+/* ─── Root variables (shared by utilities + motion components) ─── */
+:root {
+  --background: var(--color-bg-base);
+  --foreground: var(--color-text-primary);
+
+  /* RGB channels -> token-driven alpha, e.g. rgb(var(--rgb-accent-blue) / 0.15) */
+  --rgb-accent-blue: 212 175 55; /* primary gold  #D4AF37 */
+  --rgb-accent-purple: 201 154 59; /* bronze       #C99A3B */
+  --rgb-accent-violet: 201 162 39; /* deep gold    #C9A227 */
+  --rgb-accent-electric: 245 214 123; /* bright gold  #F5D67B */
+  --rgb-bg-base: 7 7 6;
+  --rgb-surface-card: 26 23 19;
+  --rgb-gold-deep: 138 106 31; /* deep gold / bronze #8A6A1F */
+  --rgb-gold-bright: 245 214 123;
+
+  /* Cursor spotlight position (updated by JS, CSS vars only) */
+  --spotlight-x: 50%;
+  --spotlight-y: 50%;
+
+  /* Cinematic easing — refined ease-out-expo */
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* ─── Base ─── */
+html {
+  /* Lenis owns smooth scrolling; native smooth would fight it. */
+  scroll-behavior: auto;
+}
+
+html.lenis-active {
+  scroll-behavior: auto !important;
+}
+
+/* Lenis recommended integration styles */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(var(--rgb-accent-violet) / 0.35);
+  color: var(--color-text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-electric);
+  outline-offset: 2px;
+}
+
+/* ─── Glassmorphism ─── */
+.glass {
+  background: rgb(var(--rgb-surface-card) / 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgb(var(--rgb-accent-electric) / 0.08);
+}
+
+.glass-strong {
+  background: rgb(20 18 15 / 0.78);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgb(var(--rgb-accent-electric) / 0.12);
+  box-shadow: 0 18px 60px -28px rgb(var(--rgb-bg-base) / 0.9);
+}
+
+/* ─── Gradient text (legacy names preserved + new gold aliases) ─── */
+.gradient-text,
+.text-gradient-primary,
+.text-gradient-gold,
+.gradient-text-gold {
+  background: linear-gradient(120deg, #d4af37, #f5d67b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-electric,
+.text-gradient-electric {
+  background: linear-gradient(120deg, #c99a3b, #f5d67b, #e8c66a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Deep gold → champagne, for heavier display type */
+.text-gradient-deep-gold,
+.gradient-text-deep-gold {
+  background: linear-gradient(120deg, #8a6a1f, #d4af37);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Glow Effects (gold) ─── */
+.glow-blue,
+.glow-gold {
+  box-shadow: 0 0 44px -10px rgb(var(--rgb-accent-blue) / 0.28);
+}
+.glow-purple {
+  box-shadow: 0 0 44px -10px rgb(var(--rgb-gold-deep) / 0.45);
+}
+.glow-electric {
+  box-shadow: 0 0 44px -10px rgb(var(--rgb-accent-electric) / 0.18);
+}
+
+/* ─── Convenience gold border ─── */
+.gold-border {
+  border: 1px solid rgb(var(--rgb-accent-blue) / 0.28);
+  box-shadow: inset 0 0 0 1px rgb(var(--rgb-accent-electric) / 0.05);
+}
+
+/* ─── Atmosphere: layered gold glows over near-black ─── */
+.bg-atmosphere {
+  background-color: var(--color-bg-base);
+  background-image:
+    radial-gradient(
+      62% 52% at 12% -5%,
+      rgb(var(--rgb-accent-blue) / 0.14) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      52% 46% at 88% 6%,
+      rgb(var(--rgb-accent-electric) / 0.1) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      70% 58% at 52% 108%,
+      rgb(var(--rgb-gold-deep) / 0.22) 0%,
+      transparent 74%
+    ),
+    linear-gradient(135deg, #070706 0%, #0e0d0b 55%, #14120f 100%);
+}
+
+/* ─── Breathing ambient glow (atmosphere only; transform/opacity) ─── */
+.hero-ambient-glow {
+  position: absolute;
+  inset: -18%;
+  background:
+    radial-gradient(
+      38% 34% at 28% 16%,
+      rgb(var(--rgb-accent-blue) / 0.16) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      34% 30% at 76% 26%,
+      rgb(var(--rgb-accent-electric) / 0.11) 0%,
+      transparent 72%
+    );
+  transform-origin: center top;
+  animation: hero-ambient-breathe 11s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes hero-ambient-breathe {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.08) translate3d(0, -1.5%, 0);
+    opacity: 1;
+  }
+}
+
+/* ─── Film-grain texture ─── */
+.noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.04;
+  pointer-events: none;
+}
+
+/* ─── Faint grid, faded toward the edges ─── */
+.grid-overlay {
+  background-image:
+    linear-gradient(to right, rgb(var(--rgb-accent-electric) / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--rgb-accent-electric) / 0.05) 1px, transparent 1px);
+  background-size: 58px 58px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 72% 62% at 50% 26%,
+    #000 0%,
+    transparent 82%
+  );
+  mask-image: radial-gradient(
+    ellipse 72% 62% at 50% 26%,
+    #000 0%,
+    transparent 82%
+  );
+  pointer-events: none;
+}
+
+/* ─── Interactive card: lift + border + gold glow ─── */
+.card-interactive {
+  position: relative;
+  border: 1px solid rgb(var(--rgb-accent-electric) / 0.1);
+  transition:
+    transform 0.38s var(--ease-premium),
+    border-color 0.38s ease,
+    box-shadow 0.38s ease,
+    background-color 0.38s ease;
+  will-change: transform;
+}
+.card-interactive:hover {
+  transform: translateY(-6px);
+  border-color: rgb(var(--rgb-accent-blue) / 0.55);
+  background-color: rgb(var(--rgb-surface-card) / 0.9);
+  box-shadow:
+    0 20px 55px -22px rgb(var(--rgb-accent-blue) / 0.35),
+    inset 0 0 0 1px rgb(var(--rgb-accent-electric) / 0.1);
+}
+
+/* ─── 1px gradient border via mask (legacy name + gold aliases) ─── */
+.gradient-border,
+.gradient-border-gold,
+.gold-border-gradient {
+  position: relative;
+}
+.gradient-border::before,
+.gradient-border-gold::before,
+.gold-border-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, #d4af37, #f5d67b);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ─── Consistent page container ─── */
+.section-container {
+  width: 100%;
+  max-width: 80rem; /* 7xl */
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .section-container {
+    padding-inline: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .section-container {
+    padding-inline: 2rem;
+  }
+}
+
+/* ─── Animated sheen for CTAs ─── */
+.shine {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.shine::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: -130%;
+  width: 55%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgb(var(--rgb-accent-electric) / 0.3),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.65s var(--ease-premium);
+  pointer-events: none;
+  z-index: 2;
+}
+.shine:hover::after {
+  left: 145%;
+}
+
+/* ─── Skeleton shimmer for loading state ─── */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface-elevated);
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--rgb-accent-electric) / 0.08),
+    transparent
+  );
+  animation: shimmer 1.8s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ─── Cursor spotlight (token-driven gold; JS only sets --spotlight-x/y) ─── */
+.cursor-spotlight {
+  background: radial-gradient(
+    380px circle at var(--spotlight-x) var(--spotlight-y),
+    rgb(var(--rgb-accent-blue) / 0.07) 0%,
+    rgb(var(--rgb-accent-electric) / 0.035) 42%,
+    transparent 72%
+  );
+}
+
+/* ─── Cinematic word reveal (CSS-owned, DOM-safe) ─── */
+[data-reveal-word] {
+  display: inline-block;
+  animation: reveal-word 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes reveal-word {
+  from {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-bg-base);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-blue);
+}
+
+/* ─── Reduced motion: refine global override ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Never leave reveal text hidden for reduced-motion users. */
+  [data-reveal-word] {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .hero-ambient-glow {
+    animation: none !important;
+    opacity: 0.85;
+  }
+  .shine::after,
+  .skeleton-shimmer::after,
+  .noise-overlay {
+    display: none;
+  }
+}

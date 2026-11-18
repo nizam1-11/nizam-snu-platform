@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { projects, projectScreenshots } from "@/lib/db/schema";
 import { eq, desc, like, and } from "drizzle-orm";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET /api/projects — List published projects (public)
 export async function GET(request: NextRequest) {
@@ -49,6 +50,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/projects — Create project (admin only)
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   try {
     const body = await request.json();
     const db = await getDbAsync();
@@ -61,6 +64,7 @@ export async function POST(request: NextRequest) {
     }
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
+    const isPublished = body.isPublished === true;
 
     await db.insert(projects).values({
       id,
@@ -77,7 +81,8 @@ export async function POST(request: NextRequest) {
       projectUrl: body.projectUrl,
       githubUrl: body.githubUrl,
       isFeatured: body.isFeatured || false,
-      isPublished: false,
+      isPublished,
+      publishedAt: isPublished ? now : null,
       createdAt: now,
       updatedAt: now,
     });

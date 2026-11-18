@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { blogPosts, blogCategories } from "@/lib/db/schema";
 import { eq, desc, like, and } from "drizzle-orm";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET /api/blog — List published blog posts (public)
 export async function GET(request: NextRequest) {
@@ -50,6 +51,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/blog — Create blog post (admin only)
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   try {
     const body = await request.json();
     const db = await getDbAsync();
@@ -66,6 +69,7 @@ export async function POST(request: NextRequest) {
     // Calculate reading time (rough estimate: 200 words/min)
     const wordCount = (body.content || "").split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200);
+    const status = body.status === "published" ? "published" : "draft";
 
     await db.insert(blogPosts).values({
       id,
@@ -77,7 +81,8 @@ export async function POST(request: NextRequest) {
       category: body.category,
       tags: body.tags ? JSON.stringify(body.tags) : null,
       authorId: body.authorId,
-      status: "draft",
+      status,
+      publishedAt: status === "published" ? now : null,
       seoTitle: body.seoTitle,
       seoDescription: body.seoDescription,
       ogImageUrl: body.ogImageUrl,

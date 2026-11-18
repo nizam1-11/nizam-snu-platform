@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { settings } from "@/lib/db/schema";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // Allowlist mirrors scripts/seed.ts keys, plus the social link keys used by the
 // admin form and `maintenance_mode` (toggled in the UI but not seeded).
@@ -61,6 +62,8 @@ export async function GET() {
 // POST /api/admin/settings — upsert website settings.
 // Accepts { settings: { [key]: value } } or a flat { [key]: value } body.
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   let db: Awaited<ReturnType<typeof getDbAsync>>;
   try {
     db = await getDbAsync();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { announcements } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET /api/announcements — List published announcements (public)
 export async function GET(request: NextRequest) {
@@ -41,6 +42,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/announcements — Create announcement (admin only)
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   try {
     const body = await request.json();
     const db = await getDbAsync();
@@ -53,6 +56,7 @@ export async function POST(request: NextRequest) {
     }
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
+    const isPublished = body.isPublished === true;
 
     await db.insert(announcements).values({
       id,
@@ -63,7 +67,8 @@ export async function POST(request: NextRequest) {
       coverImageUrl: body.coverImageUrl,
       relatedProductId: body.relatedProductId,
       version: body.version,
-      isPublished: false,
+      isPublished,
+      publishedAt: isPublished ? now : null,
       createdAt: now,
       updatedAt: now,
     });

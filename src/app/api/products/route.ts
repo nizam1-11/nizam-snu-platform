@@ -4,6 +4,7 @@ import { productSchema } from "@/lib/validators/product";
 import { getDbAsync } from "@/lib/db";
 import { products, productScreenshots } from "@/lib/db/schema";
 import { eq, desc, like, and } from "drizzle-orm";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET /api/products — List published products (public)
 export async function GET(request: NextRequest) {
@@ -53,6 +54,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/products — Create product (admin only)
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   try {
     // TODO: Check auth session + admin role
     // const session = await auth.api.getSession({ headers: request.headers });
@@ -79,6 +82,7 @@ export async function POST(request: NextRequest) {
     }
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
+    const status = body.status === "published" ? "published" : "draft";
 
     await db.insert(products).values({
       id,
@@ -96,7 +100,8 @@ export async function POST(request: NextRequest) {
       supportInfo: data.supportInfo,
       licenseType: data.licenseType,
       isFeatured: data.isFeatured,
-      status: "draft",
+      status,
+      publishedAt: status === "published" ? now : null,
       createdAt: now,
       updatedAt: now,
     });

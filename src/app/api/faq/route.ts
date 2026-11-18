@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { faqs } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET /api/faq — List published FAQs (public)
 export async function GET(request: NextRequest) {
@@ -45,6 +46,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/faq — Create FAQ (admin only)
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin(request);
+  if (guard) return guard;
   try {
     const body = await request.json();
     const db = await getDbAsync();

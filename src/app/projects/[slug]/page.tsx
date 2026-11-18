@@ -16,31 +16,31 @@ const projectData: Record<string, any> = {
   "snu-automation": {
     title: "SNU Automation",
     description:
-      "One Windows app for bulk video downloading, Facebook Page scheduling, and visual automation workflows — driven by an AI assistant that acts on real services, safely.",
+      "One Windows app for bulk video downloads, Facebook Page scheduling, and visual automation workflows — with an AI assistant that acts on real services, safely and with you in control.",
     longDescription: `
 ## Overview
-SNU Automation brings three jobs together in one place: bulk video downloading, Facebook Page scheduling, and a visual workflow builder. An in-app AI assistant (Gemini, Claude, GPT) uses tools that act on the real queue and workflow services — never a side path that skips safety checks.
+SNU Automation brings three powerful jobs together in one place: bulk video downloading, Facebook Page scheduling, and a visual workflow builder. An in-app AI assistant — Gemini, Claude, or GPT — works through tools that act on the real queue and workflow services, never a side path that skips safety checks.
 
-- Bulk video downloading: pull videos from YouTube, TikTok, and Snapchat into organized folders.
+- Bulk video downloading: pull videos from YouTube, TikTok, and Snapchat into tidy, organized folders.
 - Facebook Page scheduling: publish to your Pages with human-like pacing and safety limits.
-- Visual workflow builder: design automated workflows visually.
+- Visual workflow builder: design automated workflows visually, at your own pace.
 
 ## Bulk Downloader
 - Paste a channel link to download the whole batch in one go.
-- Per-channel folders keep downloads organized.
-- A download archive skips duplicates.
+- Per-channel folders keep every download organized.
+- A download archive skips duplicates automatically.
 - Friendly errors — no silent skips.
-- Cookie health checks and refresh.
-- Audio-only downloads and subtitles.
+- Cookie health checks and refresh, so connections stay alive.
+- Audio-only downloads and subtitles when you need them.
 - Handles 500 videos in one click.
 
 ## Facebook Automation
-- Connect Meta OAuth Pages and manage 100+ Pages.
+- Connect Meta OAuth Pages and manage 100+ Pages with ease.
 - A posting queue with jitter, daily caps, spacing, and posting hours.
-- Dry-run first, so you can check before anything goes live.
+- Dry-run first, so you can check everything before it goes live.
 - Resumable uploads and caption rotation.
-- Analytics and health checks that pause unhealthy Page queues.
-- Edit, reschedule, or run posts now; nightly cleanup.
+- Analytics and health checks that automatically pause unhealthy Page queues.
+- Edit, reschedule, or run posts now; nightly cleanup keeps things tidy.
 
 ## Visual Workflow Builder
 - 12 node types.
@@ -59,6 +59,13 @@ SNU Automation brings three jobs together in one place: bulk video downloading, 
 1. Install and activate with a key.
 2. Add sources — channel links, Pages, or a template.
 3. Run — everything shows up in the Home activity feed.
+
+## On the Roadmap
+Planned updates — not shipped yet:
+- TikTok uploading workflow automation.
+- Instagram automation.
+- YouTube workflow automation.
+- More platform workflows being added over time.
     `,
     category: "Automation Systems",
     techStack: ["Windows", "Local SQLite", "Meta Graph API", "Gemini / Claude / GPT"],
@@ -67,13 +74,66 @@ SNU Automation brings three jobs together in one place: bulk video downloading, 
       "Per-channel folders & duplicate skipping",
       "100+ Facebook Pages via Meta OAuth",
       "Dry-run safety & posting queue limits",
+      "Human-like pacing with daily caps",
+      "Health checks auto-pause unsafe queues",
       "12-node visual workflow builder",
       "8 starter templates & JSON import/export",
       "AI assistant (Gemini / Claude / GPT)",
       "Local SQLite — your data stays yours",
     ],
     status: "completed",
-    iconUrl: "/images/snu-automation-icon.svg",
+    iconUrl: "/images/snu-logo.png",
+    githubUrl: "#",
+    projectUrl: "#",
+    screenshots: [],
+  },
+  "snu-clips": {
+    title: "SNU Clips",
+    description:
+      "An upcoming tool that turns long videos and livestreams into ready-to-post clips — with 100 caption templates.",
+    longDescription: `
+## In Development — Coming Soon
+SNU Clips is being built to turn long videos and livestreams into ready-to-post clips, with 100 caption templates to choose from. It's still in development — not available yet.
+
+## The Concept
+- Extract engaging clips from long videos.
+- Turn livestreams into shareable clips.
+- A move-to-clip workflow that makes trimming feel natural.
+- 100 caption templates to match your style.
+- Ready-to-post exports, formatted and good to go.
+
+## Status
+In development — coming soon. More details will be shared as it takes shape.
+    `,
+    category: "AI Applications",
+    techStack: ["Video Processing", "AI Captions", "Automation"],
+    features: [
+      "Video → clips",
+      "Livestream → clips",
+      "Move to clip workflow",
+      "100 caption templates",
+      "Ready-to-post exports",
+    ],
+    status: "in-progress",
+    iconUrl: "/images/snu-logo.png",
+    githubUrl: "#",
+    projectUrl: "#",
+    screenshots: [],
+  },
+  "surprise-project": {
+    title: "Something Surprising",
+    description: "A new project is on the way. More details soon.",
+    longDescription: `
+## Coming Soon
+Coming soon. More details will be shared here.
+    `,
+    category: "Experimental",
+    techStack: [],
+    features: [
+      "Coming soon",
+      "Details to be revealed",
+    ],
+    status: "in-progress",
     githubUrl: "#",
     projectUrl: "#",
     screenshots: [],
@@ -107,6 +167,34 @@ Built with Python for the AI backend and Electron for the desktop interface. Use
       "Offline mode support",
     ],
     status: "completed",
+    githubUrl: "#",
+    projectUrl: "#",
+    screenshots: [],
+  },
+  "workflow-engine": {
+    title: "Workflow Engine",
+    description:
+      "A visual workflow builder for creating automated business processes with a drag-and-drop interface.",
+    longDescription: `## Overview
+A visual workflow builder concept for creating automated business processes with a drag-and-drop interface. Details will be shared here as this project develops.`,
+    category: "Automation Systems",
+    techStack: ["React", "Node.js", "PostgreSQL", "Redis"],
+    features: ["Drag-and-drop builder", "Automation pipelines"],
+    status: "completed",
+    githubUrl: "#",
+    projectUrl: "#",
+    screenshots: [],
+  },
+  "data-sync-tool": {
+    title: "Data Sync Tool",
+    description:
+      "A cross-platform tool concept for synchronizing data between different business systems and databases.",
+    longDescription: `## Overview
+A cross-platform data synchronization concept. Details will be shared here as this project develops.`,
+    category: "Desktop Applications",
+    techStack: ["C#", ".NET", "SQLite", "REST API"],
+    features: ["Cross-platform sync", "Database connectors"],
+    status: "in-progress",
     githubUrl: "#",
     projectUrl: "#",
     screenshots: [],

@@ -90,6 +90,9 @@ export const metadata: Metadata = {
     description:
       "Building AI-powered applications, automation systems, and software products.",
   },
+  icons: {
+    icon: "/favicon.png",
+  },
   robots: {
     index: true,
     follow: true,

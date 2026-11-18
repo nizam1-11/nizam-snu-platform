@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const faqs = [
+const fallbackFaqs = [
   {
     id: "1",
     question: "What is AI Task Automator?",
@@ -58,6 +58,32 @@ export default function AdminFaqPage() {
   const reduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [faqs, setFaqs] = useState(fallbackFaqs);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/faq?admin=1", { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data || !Array.isArray(data.faqs) || data.faqs.length === 0) return;
+        setFaqs(
+          data.faqs.map((f: any) => ({
+            id: String(f.id ?? ""),
+            question: String(f.question ?? ""),
+            answer: String(f.answer ?? ""),
+            category: String(f.category ?? "general"),
+            isPublished: Boolean(f.isPublished),
+            sortOrder: Number(f.sortOrder ?? 0),
+          }))
+        );
+      })
+      .catch(() => {
+        // Keep fallback data on error.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredFaqs = faqs.filter((f) => {
     const matchesSearch = f.question

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const projects = [
+const fallbackProjects = [
   {
     id: "1",
     title: "AI Task Automator",
@@ -57,6 +57,34 @@ const statusColors: Record<string, string> = {
 export default function AdminProjectsPage() {
   const reduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState("");
+  const [projects, setProjects] = useState(fallbackProjects);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/projects?admin=1", { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data || !Array.isArray(data.projects) || data.projects.length === 0) return;
+        setProjects(
+          data.projects.map((p: any) => ({
+            id: String(p.id ?? ""),
+            title: String(p.title ?? ""),
+            slug: String(p.slug ?? ""),
+            category: String(p.category ?? ""),
+            status: String(p.status ?? "completed"),
+            isPublished: Boolean(p.isPublished),
+            isFeatured: Boolean(p.isFeatured),
+            updatedAt: String(p.updatedAt ?? p.createdAt ?? "").slice(0, 10),
+          }))
+        );
+      })
+      .catch(() => {
+        // Keep fallback data on error.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredProjects = projects.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase())

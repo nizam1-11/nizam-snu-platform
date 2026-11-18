@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   Mail,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const messages = [
+const fallbackMessages = [
   {
     id: "1",
     name: "John Doe",
@@ -58,6 +58,34 @@ export default function AdminMessagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
+  const [messages, setMessages] = useState(fallbackMessages);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/messages", { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data || !Array.isArray(data.messages) || data.messages.length === 0) return;
+        setMessages(
+          data.messages.map((m: any) => ({
+            id: String(m.id ?? ""),
+            name: String(m.name ?? ""),
+            email: String(m.email ?? ""),
+            subject: String(m.subject ?? ""),
+            message: String(m.message ?? ""),
+            inquiryType: String(m.inquiryType ?? "general"),
+            status: String(m.status ?? "unread"),
+            createdAt: String(m.createdAt ?? ""),
+          }))
+        );
+      })
+      .catch(() => {
+        // Keep fallback data on error.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredMessages = messages.filter((m) => {
     const matchesSearch =

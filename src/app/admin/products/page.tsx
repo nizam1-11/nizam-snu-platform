@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Placeholder products (will be loaded from API)
-const products = [
+// Placeholder products (kept as fallback when the API is unavailable)
+const fallbackProducts = [
   {
     id: "1",
     name: "AI Task Automator",
@@ -71,6 +71,35 @@ export default function AdminProductsPage() {
   const reduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [products, setProducts] = useState(fallbackProducts);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/products?admin=1", { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data || !Array.isArray(data.products) || data.products.length === 0) return;
+        setProducts(
+          data.products.map((p: any) => ({
+            id: String(p.id ?? ""),
+            name: String(p.name ?? ""),
+            slug: String(p.slug ?? ""),
+            category: String(p.category ?? ""),
+            licenseType: String(p.licenseType ?? "free"),
+            status: String(p.status ?? "draft"),
+            version: String(p.version ?? "—"),
+            downloads: Number(p.downloads ?? 0),
+            updatedAt: String(p.updatedAt ?? p.createdAt ?? "").slice(0, 10),
+          }))
+        );
+      })
+      .catch(() => {
+        // Keep fallback data on error.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name

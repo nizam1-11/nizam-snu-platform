@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { faqs } from "@/lib/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 
-// GET /api/faq — List published FAQs (public)
+// GET /api/faq — List published FAQs (public); admin=1 lists all
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const isAdmin = searchParams.get("admin") === "1";
+    if (isAdmin) {
+      const guard = await requireAdmin(request);
+      if (guard) return guard;
+    }
     const category = searchParams.get("category");
+    const limit = isAdmin ? parseInt(searchParams.get("limit") || "100") : undefined;
 
     const db = await getDbAsync();
 
@@ -18,16 +24,18 @@ export async function GET(request: NextRequest) {
         { status: 503 }
       );
     }
-    const conditions = [eq(faqs.isPublished, true)];
+    const conditions = isAdmin ? [] : [eq(faqs.isPublished, true)];
     if (category) {
       conditions.push(eq(faqs.category, category));
     }
 
-    const results = await db
+    const query = db
       .select()
       .from(faqs)
-      .where(eq(faqs.isPublished, true))
+      .where(and(...conditions))
       .orderBy(asc(faqs.sortOrder), asc(faqs.createdAt));
+
+    const results = limit ? await query.limit(limit) : await query;
 
     // Filter by category if provided
     const filtered = category

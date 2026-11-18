@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const posts = [
+const fallbackPosts = [
   {
     id: "1",
     title: "Getting Started with AI Automation",
@@ -56,6 +56,34 @@ const statusColors: Record<string, string> = {
 export default function AdminBlogPage() {
   const reduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState("");
+  const [posts, setPosts] = useState(fallbackPosts);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/blog?admin=1", { credentials: "same-origin" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data || !Array.isArray(data.posts) || data.posts.length === 0) return;
+        setPosts(
+          data.posts.map((p: any) => ({
+            id: String(p.id ?? ""),
+            title: String(p.title ?? ""),
+            slug: String(p.slug ?? ""),
+            category: String(p.category ?? ""),
+            status: String(p.status ?? "draft"),
+            readingTime: Number(p.readingTime ?? 0),
+            publishedAt: p.publishedAt ? String(p.publishedAt).slice(0, 10) : null,
+            updatedAt: String(p.updatedAt ?? p.createdAt ?? "").slice(0, 10),
+          }))
+        );
+      })
+      .catch(() => {
+        // Keep fallback data on error.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredPosts = posts.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase())

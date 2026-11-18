@@ -4,15 +4,20 @@ import { blogPosts, blogCategories } from "@/lib/db/schema";
 import { eq, desc, like, and } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 
-// GET /api/blog — List published blog posts (public)
+// GET /api/blog — List published blog posts (public); admin=1 lists all
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const isAdmin = searchParams.get("admin") === "1";
+    if (isAdmin) {
+      const guard = await requireAdmin(request);
+      if (guard) return guard;
+    }
     const category = searchParams.get("category");
     const tag = searchParams.get("tag");
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limit = parseInt(searchParams.get("limit") || (isAdmin ? "100" : "10"));
     const offset = (page - 1) * limit;
 
     const db = await getDbAsync();
@@ -23,7 +28,7 @@ export async function GET(request: NextRequest) {
         { status: 503 }
       );
     }
-    const conditions = [eq(blogPosts.status, "published")];
+    const conditions = isAdmin ? [] : [eq(blogPosts.status, "published")];
     if (category) {
       conditions.push(eq(blogPosts.category, category));
     }

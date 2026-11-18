@@ -4,12 +4,17 @@ import { announcements } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 
-// GET /api/announcements — List published announcements (public)
+// GET /api/announcements — List published announcements (public); admin=1 lists all
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const isAdmin = searchParams.get("admin") === "1";
+    if (isAdmin) {
+      const guard = await requireAdmin(request);
+      if (guard) return guard;
+    }
     const category = searchParams.get("category");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = parseInt(searchParams.get("limit") || (isAdmin ? "100" : "20"));
 
     const db = await getDbAsync();
 
@@ -22,7 +27,7 @@ export async function GET(request: NextRequest) {
     const results = await db
       .select()
       .from(announcements)
-      .where(eq(announcements.isPublished, true))
+      .where(isAdmin ? undefined : eq(announcements.isPublished, true))
       .orderBy(desc(announcements.publishedAt))
       .limit(limit);
 

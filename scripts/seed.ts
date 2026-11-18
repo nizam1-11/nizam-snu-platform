@@ -15,7 +15,7 @@ async function seed() {
     id: adminId,
     email: "nizam14010@gmail.com",
     passwordHash,
-    name: "Nizam",
+    name: "Syed Nizam Uddin",
     role: "admin",
     mfaEnabled: false,
     createdAt: now,
@@ -30,8 +30,8 @@ async function seed() {
   // Create profile
   await db.insert(profile).values({
     id: 1,
-    name: "Nizam",
-    tagline: "AI Automation Developer & Software Creator",
+    name: "Syed Nizam Uddin",
+    tagline: "AI Automation Developer & App Creator",
     bio: "I build AI-powered applications, business automation systems, and software products under the SNU Automation brand.",
     location: "Pakistan",
     email: "nizam14010@gmail.com",

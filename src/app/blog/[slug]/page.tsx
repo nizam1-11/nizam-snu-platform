@@ -85,7 +85,7 @@ AI automation is powerful but requires thoughtful design. Start with simple work
     tags: ["AI", "Automation", "Tutorial"],
     readingTime: 5,
     publishedAt: "2026-11-10",
-    author: "Nizam",
+    author: "Syed Nizam Uddin",
   },
 };
 
@@ -118,7 +118,7 @@ export default function BlogDetailPage({
       <ArticleSchema
         title={post.title}
         description={post.excerpt}
-        author={post.author || "Nizam"}
+        author={post.author || "Syed Nizam Uddin"}
         datePublished={post.publishedAt}
         url={`${process.env.NEXT_PUBLIC_APP_URL || "https://nizam-snu.pages.dev"}/blog/${slug}`}
       />
@@ -188,7 +188,7 @@ export default function BlogDetailPage({
                   <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-accent-blue/40 shadow-[0_8px_28px_-10px_rgb(181_121_74_/_0.9)]">
                     <Image
                       src="/images/profile.jpg"
-                      alt={post.author || "Nizam"}
+                      alt={post.author || "Syed Nizam Uddin"}
                       fill
                       sizes="48px"
                       className="object-cover object-top"
@@ -197,7 +197,7 @@ export default function BlogDetailPage({
                   <div>
                     <p className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
                       <User className="w-3.5 h-3.5 text-accent-electric" />
-                      {post.author || "Nizam"}
+                      {post.author || "Syed Nizam Uddin"}
                     </p>
                     <p className="text-xs text-text-muted">Author</p>
                   </div>

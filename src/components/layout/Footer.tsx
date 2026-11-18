@@ -87,7 +87,7 @@ export function Footer() {
               N
             </div>
             <span className="text-sm text-text-muted">
-              © {new Date().getFullYear()} Nizam — SNU Automation. All rights reserved.
+              © {new Date().getFullYear()} Syed Nizam Uddin — SNU Automation. All rights reserved.
             </span>
           </div>
 

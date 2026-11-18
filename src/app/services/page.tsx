@@ -10,6 +10,7 @@ import {
   Settings,
   ArrowRight,
   Sparkles,
+  ShoppingBag,
 } from "lucide-react";
 
 import { Reveal } from "@/components/motion/Reveal";
@@ -129,6 +130,20 @@ const services = [
       "Code review",
     ],
     color: "from-accent-pink to-accent-purple",
+  },
+  {
+    slug: "ecommerce-solutions",
+    icon: ShoppingBag,
+    title: "E-Commerce Solutions",
+    description:
+      "Online store setup, automation, and optimization backed by strong ecommerce knowledge — from getting a store live to streamlining how it runs.",
+    benefits: [
+      "Store setup & configuration",
+      "Workflow automation",
+      "Payment & order flows",
+      "Performance optimization",
+    ],
+    color: "from-accent-blue to-accent-electric",
   },
 ];
 

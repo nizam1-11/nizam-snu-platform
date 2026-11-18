@@ -112,10 +112,10 @@ export default function AboutPage() {
                 About <span className="text-gradient-primary">Me</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary">
-                I&apos;m Nizam, an independent AI Automation Developer and
-                Software Creator. I build AI-powered applications, business
-                automation systems, workflow solutions, and software products
-                under the SNU Automation brand.
+                I&apos;m Syed Nizam Uddin, an independent AI Automation Developer
+                &amp; App Creator. I build AI-powered applications, automation
+                systems, and software products — and I create and publish apps
+                — under the SNU Automation brand.
               </p>
             </div>
           </Reveal>
@@ -147,7 +147,7 @@ export default function AboutPage() {
                   >
                     <Image
                       src="/images/profile.jpg"
-                      alt="Nizam — AI Automation Developer & Software Creator"
+                      alt="Syed Nizam Uddin — AI Automation Developer & App Creator"
                       fill
                       priority
                       sizes="(max-width: 640px) 256px, 320px"
@@ -171,16 +171,17 @@ export default function AboutPage() {
                 My Story
               </h2>
               <p className="leading-relaxed text-text-secondary">
-                I&apos;m an independent developer passionate about building
-                software that solves real problems. My focus areas include AI
-                automation, business process automation, workflow optimization,
-                and creating tools that help people work smarter.
+                I&apos;m Syed Nizam Uddin, an independent developer building
+                AI-powered applications, automation systems, and software
+                products. I create and publish apps, turning ideas into working
+                software that solves real problems.
               </p>
               <p className="leading-relaxed text-text-secondary">
-                Through SNU Automation, I develop and distribute software
-                products ranging from AI-powered desktop applications to
-                web-based automation tools. Each product is built with care,
-                tested thoroughly, and designed to be genuinely useful.
+                Through SNU Automation, I design and publish applications and
+                build automation systems that help people and businesses work
+                more effectively. Alongside development, I bring strong
+                ecommerce knowledge to online stores, product workflows, and the
+                customer experience.
               </p>
               <p className="leading-relaxed text-text-secondary">
                 I believe in transparent development, clean code, and shipping

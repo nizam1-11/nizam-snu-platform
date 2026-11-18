@@ -59,11 +59,12 @@ const motionOverrideScript = `(function(){try{
 
 export const metadata: Metadata = {
   title: {
-    default: "Nizam — AI Automation Developer & Software Creator | SNU Automation",
-    template: "%s | Nizam — SNU Automation",
+    default:
+      "Syed Nizam Uddin — AI Automation Developer & Software Creator | SNU Automation",
+    template: "%s | Syed Nizam Uddin — SNU Automation",
   },
   description:
-    "Nizam builds AI-powered applications, business automation systems, and software products. Explore projects, download software, and get in touch.",
+    "Syed Nizam Uddin builds AI-powered applications, business automation systems, and software products. Explore projects, download software, and get in touch.",
   keywords: [
     "AI automation",
     "software developer",
@@ -72,20 +73,20 @@ export const metadata: Metadata = {
     "workflow automation",
     "AI applications",
   ],
-  authors: [{ name: "Nizam" }],
-  creator: "Nizam",
+  authors: [{ name: "Syed Nizam Uddin" }],
+  creator: "Syed Nizam Uddin",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://nizam-snu.pages.dev",
-    siteName: "Nizam — SNU Automation",
-    title: "Nizam — AI Automation Developer & Software Creator",
+    siteName: "Syed Nizam Uddin — SNU Automation",
+    title: "Syed Nizam Uddin — AI Automation Developer & Software Creator",
     description:
       "Building AI-powered applications, automation systems, and software products.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nizam — AI Automation Developer & Software Creator",
+    title: "Syed Nizam Uddin — AI Automation Developer & Software Creator",
     description:
       "Building AI-powered applications, automation systems, and software products.",
   },
@@ -111,7 +112,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-background text-text-primary antialiased">
         <PersonSchema
-          name="Nizam"
+          name="Syed Nizam Uddin"
           url={process.env.NEXT_PUBLIC_APP_URL || "https://nizam-snu.pages.dev"}
           jobTitle="AI Automation Developer & Software Creator"
           sameAs={[

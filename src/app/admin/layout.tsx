@@ -119,7 +119,7 @@ export default function AdminLayout({
               <div className="relative w-9 h-9 shrink-0 rounded-full overflow-hidden ring-2 ring-accent-blue/40">
                 <Image
                   src="/images/profile.jpg"
-                  alt="Nizam"
+                  alt="Syed Nizam Uddin"
                   fill
                   sizes="36px"
                   className="object-cover object-top"
@@ -127,7 +127,7 @@ export default function AdminLayout({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary truncate">
-                  Nizam
+                  Syed Nizam Uddin
                 </p>
                 <p className="text-xs text-text-muted truncate">
                   nizam14010@gmail.com

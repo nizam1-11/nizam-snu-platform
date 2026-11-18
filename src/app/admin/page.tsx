@@ -64,7 +64,7 @@ export default function AdminDashboard() {
             Dashboard
           </h1>
           <p className="text-sm text-text-secondary mt-1">
-            Welcome back, Nizam. Here&apos;s an overview of your platform.
+            Welcome back, Syed Nizam Uddin. Here&apos;s an overview of your platform.
           </p>
         </div>
       </div>

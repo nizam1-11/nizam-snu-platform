@@ -3,6 +3,7 @@ import { ArrowLeft, ExternalLink, CheckCircle, Sparkles } from "lucide-react";
 
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { GradientOrb } from "@/components/interactive";
+import { CoverAmbience } from "@/components/interactive/CoverAmbience";
 import { cn } from "@/lib/utils";
 
 const GithubIcon = ({ className }: { className?: string }) => (
@@ -309,6 +310,7 @@ export default async function ProjectDetailPage({
           <div className="section-container">
             <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-accent-blue/15 via-accent-purple/10 to-transparent glass gradient-border glow-blue">
               <div className="absolute inset-0 grid-overlay opacity-70" />
+              <CoverAmbience />
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-electric/60 to-transparent" />
               <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl glass-strong text-5xl shadow-lg shadow-accent-blue/20">
                 {project.iconUrl ? (

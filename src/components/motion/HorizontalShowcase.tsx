@@ -15,6 +15,7 @@ export interface HorizontalShowcaseItem {
   description: string;
   category: string;
   techStack: string[];
+  iconUrl?: string;
 }
 
 export interface HorizontalShowcaseProps {
@@ -81,7 +82,11 @@ function ShowcaseCard({
           {item.category}
         </span>
         <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl glass-strong text-3xl shadow-lg shadow-accent-blue/20">
-          <span aria-hidden="true">🚀</span>
+          {item.iconUrl ? (
+            <img src={item.iconUrl} alt="" className="h-14 w-14 object-contain" />
+          ) : (
+            <span aria-hidden="true">🚀</span>
+          )}
         </div>
       </div>
 

@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="snuTitle">
+  <title id="snuTitle">SNU Automation</title>
+
+  <defs>
+    <!-- App body: near-black with a diagonal lift -->
+    <linearGradient id="snuBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12151D"/>
+      <stop offset="1" stop-color="#06070B"/>
+    </linearGradient>
+
+    <!-- Unified copper sheen (top-left light, bottom-right falloff) -->
+    <linearGradient id="snuCopper" gradientUnits="userSpaceOnUse" x1="96" y1="96" x2="416" y2="416">
+      <stop offset="0" stop-color="#B5794A"/>
+      <stop offset="0.5" stop-color="#D8A46B"/>
+      <stop offset="1" stop-color="#B5794A"/>
+    </linearGradient>
+
+    <!-- Border: bright corners, dimmer mid-edges -->
+    <linearGradient id="snuEdge" gradientUnits="userSpaceOnUse" x1="56" y1="56" x2="456" y2="456">
+      <stop offset="0" stop-color="#D8A46B"/>
+      <stop offset="0.5" stop-color="#7A4E30"/>
+      <stop offset="1" stop-color="#D8A46B"/>
+    </linearGradient>
+
+    <!-- Ambient halo behind the motif -->
+    <radialGradient id="snuHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#D8A46B" stop-opacity="0.20"/>
+      <stop offset="0.55" stop-color="#B5794A" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#B5794A" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="snuSoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+
+    <!-- The three glyphs, reused once blurred (glow) and once crisp -->
+    <g id="snuGlyphs" fill="none" stroke="url(#snuCopper)" stroke-linecap="round" stroke-linejoin="round">
+      <!-- 1. Download / bulk ingest -->
+      <path d="M256 128 V172" stroke-width="12"/>
+      <path d="M237 153 L256 172 L275 153" stroke-width="12"/>
+      <path d="M230 190 H282" stroke-width="12"/>
+
+      <!-- 2. Schedule / clock -->
+      <circle cx="176" cy="312" r="27" stroke-width="11"/>
+      <path d="M176 294 V312 L190 321" stroke-width="11"/>
+      <circle cx="176" cy="312" r="4" fill="url(#snuCopper)" stroke="none"/>
+
+      <!-- 3. Visual workflow / node graph -->
+      <path d="M336 287 L318 319 L354 319 Z" stroke-width="9"/>
+      <circle cx="336" cy="287" r="9" fill="#0A0C13" stroke-width="7"/>
+      <circle cx="318" cy="319" r="9" fill="#0A0C13" stroke-width="7"/>
+      <circle cx="354" cy="319" r="9" fill="#0A0C13" stroke-width="7"/>
+    </g>
+  </defs>
+
+  <!-- Rounded-square body + copper edge + hairline -->
+  <rect x="10" y="10" width="492" height="492" rx="96" fill="url(#snuBg)"/>
+  <rect x="10" y="10" width="492" height="492" rx="96" fill="none" stroke="url(#snuEdge)" stroke-width="6"/>
+  <rect x="24" y="24" width="464" height="464" rx="84" fill="none" stroke="url(#snuCopper)" stroke-width="1.5" opacity="0.16"/>
+
+  <!-- Atmosphere -->
+  <circle cx="256" cy="256" r="205" fill="url(#snuHalo)"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#snuCopper)" stroke-width="2" opacity="0.09"/>
+
+  <!-- Connector triangle: soft glow + crisp line -->
+  <path d="M256 158 L176 312 L336 312 Z" fill="none" stroke="url(#snuCopper)"
+        stroke-width="14" stroke-linejoin="round" opacity="0.5" filter="url(#snuSoft)"/>
+  <path d="M256 158 L176 312 L336 312 Z" fill="none" stroke="url(#snuCopper)"
+        stroke-width="7" stroke-linejoin="round" opacity="0.72"/>
+  <g fill="url(#snuCopper)" opacity="0.85">
+    <circle cx="216" cy="235" r="4"/>
+    <circle cx="256" cy="312" r="4"/>
+    <circle cx="296" cy="235" r="4"/>
+  </g>
+
+  <!-- Three dark discs holding the glyphs -->
+  <g fill="#0A0C13" stroke="url(#snuCopper)" stroke-width="6">
+    <circle cx="256" cy="158" r="52"/>
+    <circle cx="176" cy="312" r="52"/>
+    <circle cx="336" cy="312" r="52"/>
+  </g>
+  <g fill="none" stroke="url(#snuCopper)" stroke-width="1.5" opacity="0.18">
+    <circle cx="256" cy="158" r="43"/>
+    <circle cx="176" cy="312" r="43"/>
+    <circle cx="336" cy="312" r="43"/>
+  </g>
+
+  <!-- Glyphs: blurred pass for glow, then sharp pass -->
+  <use href="#snuGlyphs" xlink:href="#snuGlyphs" filter="url(#snuSoft)" opacity="0.65"/>
+  <use href="#snuGlyphs" xlink:href="#snuGlyphs"/>
+</svg>

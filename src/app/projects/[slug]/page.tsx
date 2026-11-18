@@ -13,6 +13,71 @@ const GithubIcon = ({ className }: { className?: string }) => (
 
 // Placeholder project data (will be loaded from DB)
 const projectData: Record<string, any> = {
+  "snu-automation": {
+    title: "SNU Automation",
+    description:
+      "One Windows app for bulk video downloading, Facebook Page scheduling, and visual automation workflows — driven by an AI assistant that acts on real services, safely.",
+    longDescription: `
+## Overview
+SNU Automation brings three jobs together in one place: bulk video downloading, Facebook Page scheduling, and a visual workflow builder. An in-app AI assistant (Gemini, Claude, GPT) uses tools that act on the real queue and workflow services — never a side path that skips safety checks.
+
+- Bulk video downloading: pull videos from YouTube, TikTok, and Snapchat into organized folders.
+- Facebook Page scheduling: publish to your Pages with human-like pacing and safety limits.
+- Visual workflow builder: design automated workflows visually.
+
+## Bulk Downloader
+- Paste a channel link to download the whole batch in one go.
+- Per-channel folders keep downloads organized.
+- A download archive skips duplicates.
+- Friendly errors — no silent skips.
+- Cookie health checks and refresh.
+- Audio-only downloads and subtitles.
+- Handles 500 videos in one click.
+
+## Facebook Automation
+- Connect Meta OAuth Pages and manage 100+ Pages.
+- A posting queue with jitter, daily caps, spacing, and posting hours.
+- Dry-run first, so you can check before anything goes live.
+- Resumable uploads and caption rotation.
+- Analytics and health checks that pause unhealthy Page queues.
+- Edit, reschedule, or run posts now; nightly cleanup.
+
+## Visual Workflow Builder
+- 12 node types.
+- 8 starter templates.
+- Daily schedule with pause/resume and next-run info.
+- JSON import/export.
+
+## Why SNU
+- Nothing silent: one activity timeline shows everything.
+- Editable queued posts and undo.
+- Safety before speed: no bot-like behavior, dry-run first.
+- Data stays yours: local SQLite; the server only verifies keys.
+- Made by Nizam for solo creators.
+
+## How It Works
+1. Install and activate with a key.
+2. Add sources — channel links, Pages, or a template.
+3. Run — everything shows up in the Home activity feed.
+    `,
+    category: "Automation Systems",
+    techStack: ["Windows", "Local SQLite", "Meta Graph API", "Gemini / Claude / GPT"],
+    features: [
+      "Bulk channel downloads (YouTube, TikTok, Snapchat)",
+      "Per-channel folders & duplicate skipping",
+      "100+ Facebook Pages via Meta OAuth",
+      "Dry-run safety & posting queue limits",
+      "12-node visual workflow builder",
+      "8 starter templates & JSON import/export",
+      "AI assistant (Gemini / Claude / GPT)",
+      "Local SQLite — your data stays yours",
+    ],
+    status: "completed",
+    iconUrl: "/images/snu-automation-icon.svg",
+    githubUrl: "#",
+    projectUrl: "#",
+    screenshots: [],
+  },
   "ai-task-automator": {
     title: "AI Task Automator",
     description:
@@ -158,7 +223,11 @@ export default async function ProjectDetailPage({
               <div className="absolute inset-0 grid-overlay opacity-70" />
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-electric/60 to-transparent" />
               <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl glass-strong text-5xl shadow-lg shadow-accent-blue/20">
-                <span aria-hidden="true">🚀</span>
+                {project.iconUrl ? (
+                  <img src={project.iconUrl} alt="" className="h-20 w-20 object-contain" />
+                ) : (
+                  <span aria-hidden="true">🚀</span>
+                )}
               </div>
             </div>
           </div>
@@ -171,8 +240,33 @@ export default async function ProjectDetailPage({
           {/* Main Content */}
           <Reveal direction="left" className="lg:col-span-2">
             <div className="rounded-2xl glass gradient-border p-6 sm:p-8">
-              <div className="whitespace-pre-line leading-relaxed text-text-secondary">
-                {project.longDescription}
+              <div className="leading-relaxed text-text-secondary">
+                {project.longDescription.split("\n").map((line: string, index: number) => {
+                  if (line.startsWith("## ")) {
+                    return (
+                      <h3
+                        key={index}
+                        className="mb-2 mt-6 font-heading text-xl font-bold text-text-primary first:mt-0"
+                      >
+                        {line.replace("## ", "")}
+                      </h3>
+                    );
+                  }
+                  if (line.startsWith("- ")) {
+                    return (
+                      <div key={index} className="ml-4 flex gap-2 py-0.5">
+                        <span className="text-accent-electric">•</span>
+                        <span>{line.replace("- ", "")}</span>
+                      </div>
+                    );
+                  }
+                  if (!line.trim()) return <div key={index} className="h-2" />;
+                  return (
+                    <p key={index} className="mb-2">
+                      {line}
+                    </p>
+                  );
+                })}
               </div>
             </div>
           </Reveal>

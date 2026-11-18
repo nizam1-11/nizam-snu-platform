@@ -27,8 +27,36 @@ const categories = [
   { id: "experimental", label: "Experimental" },
 ];
 
+type Project = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  techStack: string[];
+  status: string;
+  isFeatured: boolean;
+  githubUrl: string;
+  projectUrl: string;
+  iconUrl?: string;
+};
+
 // Placeholder projects (will be loaded from database)
-const projects = [
+const projects: Project[] = [
+  {
+    id: "snu-automation",
+    slug: "snu-automation",
+    title: "SNU Automation",
+    description:
+      "One Windows app for bulk video downloading, Facebook Page scheduling, and visual automation workflows — driven by an AI assistant that acts on real services, safely.",
+    category: "automation",
+    techStack: ["Windows", "Local SQLite", "Meta Graph API", "Gemini / Claude / GPT"],
+    status: "completed",
+    isFeatured: true,
+    iconUrl: "/images/snu-automation-icon.svg",
+    githubUrl: "#",
+    projectUrl: "#",
+  },
   {
     id: "1",
     slug: "ai-task-automator",
@@ -120,6 +148,7 @@ export default function ProjectsPage() {
             categories.find((c) => c.id === project.category)?.label ??
             project.category,
           techStack: project.techStack,
+          iconUrl: project.iconUrl,
         }))}
       />
 
@@ -175,7 +204,11 @@ export default function ProjectsPage() {
                         {categories.find((c) => c.id === project.category)?.label}
                       </span>
                       <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl glass-strong text-3xl shadow-lg shadow-accent-blue/20">
-                        <span aria-hidden="true">🚀</span>
+                        {project.iconUrl ? (
+                          <img src={project.iconUrl} alt="" className="h-20 w-20 object-contain" />
+                        ) : (
+                          <span aria-hidden="true">🚀</span>
+                        )}
                       </div>
                     </div>
 

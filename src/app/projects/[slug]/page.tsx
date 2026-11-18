@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, CheckCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, CheckCircle, Sparkles, Download } from "lucide-react";
 
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { GradientOrb } from "@/components/interactive";
@@ -276,6 +276,14 @@ export default async function ProjectDetailPage({
 
               {/* Action Buttons */}
               <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/download"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-accent-blue to-accent-purple px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-blue/20 transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  <Download className="h-5 w-5" />
+                  Download
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
                 {project.githubUrl && project.githubUrl !== "#" && (
                   <a
                     href={project.githubUrl}

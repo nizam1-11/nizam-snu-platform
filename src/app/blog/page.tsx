@@ -31,6 +31,7 @@ type Post = {
   tags: string[];
   readingTime: number;
   publishedAt: string;
+  coverImageUrl: string | null;
 };
 
 /** Defensively parse a value that may be a JSON string (D1) or an array. */
@@ -66,6 +67,7 @@ const fallbackPosts: Post[] = [
     tags: ["Facebook", "Automation", "Safety"],
     readingTime: 6,
     publishedAt: "2026-11-18",
+    coverImageUrl: null,
   },
   {
     id: "2",
@@ -77,6 +79,7 @@ const fallbackPosts: Post[] = [
     tags: ["Video", "Downloading", "Workflow"],
     readingTime: 5,
     publishedAt: "2026-11-15",
+    coverImageUrl: null,
   },
   {
     id: "3",
@@ -88,6 +91,7 @@ const fallbackPosts: Post[] = [
     tags: ["Workflows", "AI", "No-Code"],
     readingTime: 7,
     publishedAt: "2026-11-10",
+    coverImageUrl: null,
   },
 ];
 
@@ -121,6 +125,11 @@ export default function BlogPage() {
                 ? item.readingTime
                 : 5,
             publishedAt: toDateLabel(item.publishedAt),
+            coverImageUrl:
+              typeof item.coverImageUrl === "string" &&
+              item.coverImageUrl.trim().length > 0
+                ? item.coverImageUrl
+                : null,
           }))
           .filter((post) => post.slug.length > 0);
         // Keep the hardcoded posts when the API returns nothing.
@@ -233,6 +242,18 @@ export default function BlogPage() {
                             <div className="pointer-events-none absolute -bottom-12 -left-8 w-40 h-40 rounded-full bg-accent-purple/20 blur-2xl" />
                             <div className="pointer-events-none absolute inset-0 grid-overlay opacity-40" />
                             <BookOpen className="relative w-14 h-14 text-text-muted/40 transition-transform duration-500 group-hover:scale-110 group-hover:text-accent-electric/60" />
+                            {post.coverImageUrl && (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={post.coverImageUrl}
+                                alt=""
+                                loading="lazy"
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            )}
                             <span className="absolute top-4 left-4 px-2.5 py-1 text-xs rounded-full glass text-accent-cyan capitalize">
                               {post.category}
                             </span>

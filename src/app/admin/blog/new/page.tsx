@@ -11,6 +11,7 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +29,9 @@ export default function NewBlogPostPage() {
     content: "",
     category: "AI",
     tags: "",
+    coverImageUrl: "",
   });
+  const [coverImageError, setCoverImageError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -65,7 +68,8 @@ export default function NewBlogPostPage() {
           type: "success",
           message: `Post ${publish ? "published" : "saved as draft"} successfully.${data.id ? ` ID: ${data.id}` : ""}`,
         });
-        setFormData({ title: "", slug: "", excerpt: "", content: "", category: "AI", tags: "" });
+        setFormData({ title: "", slug: "", excerpt: "", content: "", category: "AI", tags: "", coverImageUrl: "" });
+        setCoverImageError(false);
       } else {
         setFeedback({ type: "error", message: data.error || "Failed to save post" });
       }
@@ -191,6 +195,51 @@ export default function NewBlogPostPage() {
                 className={cn(inputClass, "resize-none font-mono text-sm")}
                 placeholder={"## Introduction\n\nStart writing your article here..."}
               />
+            </div>
+
+            <div>
+              <label htmlFor="coverImageUrl" className="block text-sm font-medium text-text-primary mb-2">
+                Cover Image URL
+              </label>
+              <input
+                id="coverImageUrl"
+                name="coverImageUrl"
+                type="url"
+                value={formData.coverImageUrl}
+                onChange={(e) => {
+                  setFormData({ ...formData, coverImageUrl: e.target.value });
+                  setCoverImageError(false);
+                }}
+                className={inputClass}
+                placeholder="https://example.com/cover.jpg"
+              />
+              <p className="text-xs text-text-muted mt-2">
+                Paste a direct image link. Leave empty to use the default gradient cover.
+              </p>
+              {formData.coverImageUrl ? (
+                coverImageError ? (
+                  <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-xs text-text-muted" role="status">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    Image could not be loaded
+                  </div>
+                ) : (
+                  <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={formData.coverImageUrl}
+                      alt="Cover image preview"
+                      className="block h-32 w-full object-cover"
+                      onError={() => setCoverImageError(true)}
+                      onLoad={() => setCoverImageError(false)}
+                    />
+                  </div>
+                )
+              ) : (
+                <div className="mt-3 flex h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface text-text-muted">
+                  <ImageIcon className="w-6 h-6" />
+                  <span className="text-xs">No cover image</span>
+                </div>
+              )}
             </div>
           </section>
         </div>

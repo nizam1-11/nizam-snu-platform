@@ -280,6 +280,11 @@ export default function BlogDetailPage({
               : base.readingTime || 5,
           publishedAt: toDateLabel(match.publishedAt || base.publishedAt),
           author: base.author || "Syed Nizam Uddin",
+          coverImageUrl:
+            typeof match.coverImageUrl === "string" &&
+            match.coverImageUrl.trim().length > 0
+              ? match.coverImageUrl
+              : null,
         });
       })
       .catch(() => {
@@ -373,6 +378,18 @@ export default function BlogDetailPage({
                 <p className="text-lg text-text-secondary mb-10 max-w-2xl">
                   {post.excerpt}
                 </p>
+
+                {post.coverImageUrl && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={post.coverImageUrl}
+                    alt={post.title}
+                    className="w-full h-56 sm:h-72 lg:h-96 object-cover rounded-2xl mb-10 shadow-[0_8px_28px_-10px_rgb(181_121_74_/_0.9)]"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
 
                 {/* Author card */}
                 <div className="flex items-center gap-4 pt-6 border-t border-white/10">

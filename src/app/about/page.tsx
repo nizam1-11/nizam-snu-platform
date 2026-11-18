@@ -15,12 +15,12 @@ import { GradientOrb, ImageReveal } from "@/components/interactive";
 import { cn } from "@/lib/utils";
 
 const skills = [
-  { name: "AI & Machine Learning", level: 85, category: "AI" },
-  { name: "Workflow Automation", level: 90, category: "Automation" },
-  { name: "Full-Stack Web Dev", level: 88, category: "Web" },
-  { name: "Desktop Applications", level: 80, category: "Desktop" },
-  { name: "Android Development", level: 75, category: "Mobile" },
-  { name: "Cloud & DevOps", level: 78, category: "DevOps" },
+  { name: "AI & Machine Learning", level: 100, category: "AI" },
+  { name: "Workflow Automation", level: 100, category: "Automation" },
+  { name: "Full-Stack Web Dev", level: 100, category: "Web" },
+  { name: "Desktop Applications", level: 100, category: "Desktop" },
+  { name: "Android Development", level: 100, category: "Mobile" },
+  { name: "Cloud & DevOps", level: 100, category: "DevOps" },
 ];
 
 const timeline = [

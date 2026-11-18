@@ -52,8 +52,14 @@ export default function AdminLayout({
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-5 border-b border-border">
             <Link href="/admin" className="flex items-center gap-3 group">
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center text-white font-bold text-sm shadow-[0_8px_24px_-10px_rgb(181_121_74_/_0.9)]">
-                N
+              <div className="relative w-9 h-9 shrink-0">
+                <img
+                  src="/images/snu-logo.png"
+                  alt="SNU Automation"
+                  width={512}
+                  height={512}
+                  className="w-full h-full object-contain"
+                />
                 <Sparkles className="w-2.5 h-2.5 absolute -top-1 -right-1 text-accent-cyan" />
               </div>
               <div className="leading-tight">

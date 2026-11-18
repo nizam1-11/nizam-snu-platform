@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { PageTransition } from "@/components/motion/PageTransition";
 import { CustomCursor, RippleEffect } from "@/components/interactive";
-import { MotionToggle } from "@/components/interactive/MotionToggle";
+import { WhatsAppButton } from "@/components/interactive/WhatsAppButton";
 
 /**
  * Fixed 2px gold reading-progress bar pinned to the very top of the viewport.
@@ -53,7 +53,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           They self-disable on touch / coarse pointers and reduced motion. */}
       <CustomCursor />
       <RippleEffect />
-      <MotionToggle />
+      <WhatsAppButton />
 
       {isAdmin ? (
         children

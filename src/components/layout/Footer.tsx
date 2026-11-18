@@ -83,9 +83,13 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col items-center justify-between gap-5 border-t border-border/60 pt-8 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-accent-blue to-accent-purple text-xs font-bold text-white">
-              N
-            </div>
+            <img
+              src="/images/snu-logo.png"
+              alt="SNU Automation"
+              width={512}
+              height={512}
+              className="h-7 w-7 shrink-0 object-contain"
+            />
             <span className="text-sm text-text-muted">
               © {new Date().getFullYear()} Syed Nizam Uddin — SNU Automation. All rights reserved.
             </span>

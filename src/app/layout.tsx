@@ -27,33 +27,26 @@ const jetbrainsMono = JetBrains_Mono({
 
 /**
  * GLOBAL MOTION OVERRIDE — runs synchronously during HTML parsing, BEFORE
- * hydration. Animations are ON by default for every visitor regardless of the
- * OS "reduce motion" setting; only a stored 'off' opts the user out.
+ * hydration. Motion is ALWAYS ON for every visitor, regardless of the OS
+ * "reduce motion" setting — there is no toggle and no opt-out.
  *
  * motion-dom calls matchMedia("(prefers-reduced-motion)") and local components
  * call matchMedia("(prefers-reduced-motion: reduce)") — both go through
- * window.matchMedia, so this single patch covers every consumer. The class on
- * <html> drives the class-based override block in globals.css. Wrapped in
- * try/catch so any failure leaves native behaviour intact.
+ * window.matchMedia, so this single patch covers every consumer by forcing
+ * `matches` to false for any prefers-reduced-motion query. Wrapped in
+ * try/catch so any unexpected failure leaves native behaviour intact.
  */
 const motionOverrideScript = `(function(){try{
-  var off=localStorage.getItem('nizam-motion')==='off';
   var orig=window.matchMedia.bind(window);
   window.matchMedia=function(q){
     var m=orig(q);
     if(typeof q==='string'&&q.indexOf('prefers-reduced-motion')!==-1){
       return new Proxy(m,{get:function(t,p){
-        if(p==='matches')return off;
+        if(p==='matches')return false;
         var v=t[p];return typeof v==='function'?v.bind(t):v;
       }});
     }
     return m;
-  };
-  document.documentElement.classList.toggle('motion-off',off);
-  window.__nizamSetMotion=function(on){
-    try{localStorage.setItem('nizam-motion',on?'on':'off')}catch(e){}
-    document.documentElement.classList.toggle('motion-off',!on);
-    location.reload();
   };
 }catch(e){}})();`;
 

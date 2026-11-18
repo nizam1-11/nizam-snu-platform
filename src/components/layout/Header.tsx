@@ -65,9 +65,13 @@ export function Header() {
             href="/"
             className="group flex shrink-0 items-center gap-2.5 rounded-md focus-visible:ring-2 focus-visible:ring-accent-electric"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple text-sm font-bold text-white shadow-lg shadow-accent-blue/25 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-3">
-              N
-            </span>
+            <img
+              src="/images/snu-logo.png"
+              alt="SNU Automation"
+              width={512}
+              height={512}
+              className="h-9 w-9 shrink-0 object-contain transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-3"
+            />
             <span className="font-heading text-lg font-semibold tracking-tight text-text-primary">
               Nizam
             </span>

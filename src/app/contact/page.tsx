@@ -16,6 +16,7 @@ import {
   FormSuccessSparkle,
   GradientOrb,
 } from "@/components/interactive";
+import { WhatsAppIcon } from "@/components/interactive/WhatsAppButton";
 import { Reveal } from "@/components/motion/Reveal";
 import { cn } from "@/lib/utils";
 
@@ -168,6 +169,27 @@ export default function ContactPage() {
                       </div>
                     </div>
                   ))}
+
+                  {/* WhatsApp — a dedicated card so its link opens in a new tab
+                      without altering the shared email/location card logic. */}
+                  <div className="flex items-center gap-4 group">
+                    <div className="w-11 h-11 shrink-0 rounded-xl glass gradient-border flex items-center justify-center text-accent-electric transition-colors group-hover:text-accent-blue">
+                      <WhatsAppIcon className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs uppercase tracking-wider text-text-muted mb-0.5">
+                        WhatsApp
+                      </p>
+                      <a
+                        href="https://wa.me/923239163815?text=Hi%20Nizam%2C%20I%27d%20like%20to%20discuss%20a%20project"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-text-primary hover:text-accent-blue transition-colors truncate block"
+                      >
+                        +923239163815
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
 

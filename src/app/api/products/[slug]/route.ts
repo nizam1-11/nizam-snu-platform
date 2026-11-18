@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDbAsync } from "@/lib/db";
 import { products, productScreenshots, releases, releaseAssets } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -10,7 +10,14 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
 
     const product = await db
       .select()
@@ -72,7 +79,14 @@ export async function PUT(
   try {
     const { slug } = await params;
     const body = await request.json();
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
 
     const existing = await db
       .select()
@@ -113,7 +127,14 @@ export async function DELETE(
 ) {
   try {
     const { slug } = await params;
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
 
     await db
       .update(products)

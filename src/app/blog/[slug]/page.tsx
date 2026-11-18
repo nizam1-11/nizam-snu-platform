@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
@@ -215,6 +215,31 @@ Automate the boring middle — the sorting, scheduling, and repeating — and ke
   },
 };
 
+/** Defensively parse a value that may be a JSON string (D1) or an array. */
+function parseStringArray(value: unknown, fallback: string[] = []): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      // Malformed JSON — fall back.
+    }
+  }
+  return fallback;
+}
+
+function capitalize(value: string): string {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
+/** "2026-11-18T00:00:00.000Z" -> "2026-11-18" to match the hardcoded display. */
+function toDateLabel(value: unknown): string {
+  if (typeof value !== "string" || !value) return "";
+  const match = value.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : value;
+}
+
 export default function BlogDetailPage({
   params,
 }: {
@@ -222,7 +247,47 @@ export default function BlogDetailPage({
 }) {
   const { slug } = use(params);
   const reduceMotion = useReducedMotion();
-  const post = postData[slug];
+  const [post, setPost] = useState<any>(() => postData[slug]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    // Start from the hardcoded article; an API match overrides it below.
+    setPost(postData[slug]);
+
+    fetch("/api/blog", { signal: controller.signal })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error("Blog request failed"))
+      )
+      .then((data: { posts?: Record<string, unknown>[] }) => {
+        const fromApi = Array.isArray(data.posts) ? data.posts : [];
+        const match = fromApi.find((item) => item.slug === slug);
+        if (!match) return; // Not in the API — keep the hardcoded entry.
+        const base = postData[slug] || {};
+        setPost({
+          title: String(match.title || base.title || "Untitled"),
+          excerpt: String(match.excerpt || base.excerpt || ""),
+          content:
+            typeof match.content === "string" && match.content.length > 0
+              ? match.content
+              : base.content || "",
+          category: capitalize(String(match.category || base.category || "")),
+          tags: parseStringArray(match.tags, base.tags || []),
+          readingTime:
+            typeof match.readingTime === "number" && match.readingTime > 0
+              ? match.readingTime
+              : base.readingTime || 5,
+          publishedAt: toDateLabel(match.publishedAt || base.publishedAt),
+          author: base.author || "Syed Nizam Uddin",
+        });
+      })
+      .catch(() => {
+        // Keep the hardcoded article as the fallback.
+      });
+
+    return () => controller.abort();
+  }, [slug]);
 
   if (!post) {
     return (

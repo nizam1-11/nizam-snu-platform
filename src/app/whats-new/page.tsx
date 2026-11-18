@@ -60,8 +60,60 @@ function formatDate(value: string | null | undefined): string {
   return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
 }
 
+/**
+ * Hardcoded real announcements used as the initial data source and as a
+ * fallback whenever the API is empty or unavailable, so the feed never
+ * looks empty. (Mirrors the 3 real entries in scripts/seed-announcements.ts.)
+ */
+const fallbackAnnouncements: Announcement[] = [
+  {
+    id: "fallback-snu-automation-portfolio-launch",
+    slug: "snu-automation-portfolio-launch",
+    title: "SNU Automation is now on the portfolio",
+    content:
+      "The main app is live on the site. One Windows tool that brings together bulk video downloading, Facebook Page scheduling with safety pacing, and a visual workflow builder — driven by an AI assistant that works with the real queue and workflow services.\n\nExplore the project page for the full breakdown of features and how it works.",
+    category: "launch",
+    coverImageUrl: "/images/snu-logo.png",
+    relatedProductId: null,
+    version: "1.0",
+    publishedAt: "2026-11-18T00:00:00.000Z",
+    createdAt: "2026-11-18T00:00:00.000Z",
+    updatedAt: "2026-11-18T00:00:00.000Z",
+  },
+  {
+    id: "fallback-snu-clips-in-development",
+    slug: "snu-clips-in-development",
+    title: "SNU Clips is in development",
+    content:
+      "The next tool is on the way: turn long videos and livestreams into ready-to-post clips. Think video-to-clips, livestream-to-clips, a move-to-clip flow, and 100 caption templates. More details will be shared here as it takes shape.",
+    category: "announcement",
+    coverImageUrl: "/images/snu-logo.png",
+    relatedProductId: null,
+    version: null,
+    publishedAt: "2026-11-18T00:00:00.000Z",
+    createdAt: "2026-11-18T00:00:00.000Z",
+    updatedAt: "2026-11-18T00:00:00.000Z",
+  },
+  {
+    id: "fallback-roadmap-more-platform-workflows",
+    slug: "roadmap-more-platform-workflows",
+    title: "On the roadmap: more platform workflows",
+    content:
+      "Planned updates for SNU Automation — not shipped yet: TikTok uploading workflows, Instagram automation, and YouTube workflow automation. More platform workflows will be added over time. Follow this space for real updates as they land.",
+    category: "feature",
+    coverImageUrl: null,
+    relatedProductId: null,
+    version: null,
+    publishedAt: "2026-11-18T00:00:00.000Z",
+    createdAt: "2026-11-18T00:00:00.000Z",
+    updatedAt: "2026-11-18T00:00:00.000Z",
+  },
+];
+
 export default function WhatsNewPage() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(
+    fallbackAnnouncements
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -77,11 +129,14 @@ export default function WhatsNewPage() {
         return response.json();
       })
       .then((data: { announcements?: Announcement[] }) => {
-        setAnnouncements(Array.isArray(data.announcements) ? data.announcements : []);
+        const fromApi = Array.isArray(data.announcements) ? data.announcements : [];
+        // Keep the hardcoded real announcements when the API returns nothing.
+        setAnnouncements(fromApi.length > 0 ? fromApi : fallbackAnnouncements);
         setLoading(false);
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
+        setAnnouncements(fallbackAnnouncements);
         setError(true);
         setLoading(false);
       });

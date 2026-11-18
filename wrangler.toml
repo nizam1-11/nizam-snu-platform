@@ -2,22 +2,26 @@ name = "nizam-snu-platform"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Pages configuration
-pages_build_output_dir = ".vercel/output/static"
+# Cloudflare account
+account_id = "c65dd30f1ccf3854709aa1d4bfd6a319"
 
-# D1 Database
+# OpenNext Cloudflare output
+main = ".open-next/worker.js"
+assets = { directory = ".open-next/assets", binding = "ASSETS" }
+
+# D1 Database (created via Cloudflare API)
 [[d1_databases]]
 binding = "DB"
 database_name = "nizam-snu-db"
-database_id = "YOUR_D1_DATABASE_ID"  # Replace after creating D1 database
+database_id = "1a45ea55-72bc-4a49-a12b-48f04d389384"
+migrations_dir = "drizzle/migrations"
 
-# R2 Storage
-[[r2_buckets]]
-binding = "STORAGE"
-bucket_name = "nizam-snu-storage"
-preview_bucket_name = "nizam-snu-storage-preview"
+# R2 Storage (enable in dashboard first, then uncomment)
+# [[r2_buckets]]
+# binding = "STORAGE"
+# bucket_name = "nizam-snu-storage"
 
-# Environment variables (set in Cloudflare Dashboard)
-# NEXT_PUBLIC_APP_URL
+# Environment variables (set as Workers secrets after deploy)
 # BETTER_AUTH_SECRET
+# NEXT_PUBLIC_APP_URL
 # RESEND_API_KEY

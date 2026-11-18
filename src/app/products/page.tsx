@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, Download, Filter, Shield, Star, Zap } from "lucide-react";
@@ -22,8 +22,8 @@ const categories = [
   { id: "utility", label: "Utilities" },
 ];
 
-// Placeholder products (will be loaded from database)
-const products = [
+// Hardcoded products used as the initial data source and API fallback.
+const fallbackProducts = [
   {
     id: "1",
     slug: "ai-task-automator",
@@ -68,6 +68,22 @@ const products = [
   },
 ];
 
+type Product = (typeof fallbackProducts)[number];
+
+/** Defensively parse a value that may be a JSON string (D1) or an array. */
+function parseStringArray(value: unknown, fallback: string[] = []): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      // Malformed JSON — fall back.
+    }
+  }
+  return fallback;
+}
+
 const licenseColors: Record<string, string> = {
   free: "bg-success/20 text-success",
   freemium: "bg-accent-blue/20 text-accent-blue",
@@ -96,7 +112,7 @@ function mockupVariant(
 }
 
 /** Decorative, data-neutral app surface rendered inside each device frame. */
-function MockupScreen({ product }: { product: (typeof products)[number] }) {
+function MockupScreen({ product }: { product: Product }) {
   return (
     <div className="space-y-3" aria-hidden="true">
       <div className="flex items-center gap-2">
@@ -137,6 +153,50 @@ function MockupScreen({ product }: { product: (typeof products)[number] }) {
 
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [products, setProducts] = useState<Product[]>(fallbackProducts);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/products", { signal: controller.signal })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error("Products request failed"))
+      )
+      .then((data: { products?: Record<string, unknown>[] }) => {
+        const fromApi = Array.isArray(data.products) ? data.products : [];
+        const mapped: Product[] = fromApi
+          .map((item) => {
+            const licenseType = String(item.licenseType || "free");
+            return {
+              id: String(item.id || item.slug || ""),
+              slug: String(item.slug || ""),
+              name: String(item.name || "Untitled"),
+              tagline: String(item.tagline || ""),
+              description: String(item.description || ""),
+              // Normalize to lowercase so the existing category filter keeps working.
+              category: String(item.category || "utility").toLowerCase(),
+              licenseType: licenseColors[licenseType] ? licenseType : "free",
+              isFeatured: item.isFeatured === true || item.isFeatured === 1,
+              supportedPlatforms: parseStringArray(item.supportedPlatforms).map(
+                (platform) => platform.toLowerCase()
+              ),
+              // The products table has no version/download-count columns; use
+              // neutral defaults so the existing markup keeps its shape.
+              latestVersion: String(item.latestVersion || "1.0"),
+              downloadCount:
+                typeof item.downloadCount === "number" ? item.downloadCount : 0,
+            };
+          })
+          .filter((product) => product.slug.length > 0);
+        // Keep the hardcoded products when the API returns nothing.
+        if (mapped.length > 0) setProducts(mapped);
+      })
+      .catch(() => {
+        // Keep the hardcoded products as the fallback.
+      });
+    return () => controller.abort();
+  }, []);
 
   const filteredProducts =
     activeCategory === "all"

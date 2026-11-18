@@ -1,38 +1,58 @@
 import { drizzle } from "drizzle-orm/d1";
-import { createRequire } from "node:module";
 import * as schema from "./schema";
 
-// Cloudflare D1 binding type
 type D1Database = any;
 
-let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+/**
+ * Resolve the database for the current runtime:
+ * - On Cloudflare Workers (production): use the D1 binding via OpenNext's
+ *   getCloudflareContext(). Imported dynamically so local dev (which has no
+ *   Cloudflare context) never loads the Cloudflare-only module.
+ * - Locally: use better-sqlite3 against ./local.db, loaded via createRequire
+ *   so Next's bundler doesn't intercept the native addon.
+ */
+export async function getDbAsync(d1Binding?: D1Database) {
+  if (d1Binding) return drizzle(d1Binding, { schema });
 
-// `createRequire` resolves native modules correctly inside Next's server
-// bundle (a plain require() is intercepted by the bundler and fails for
-// native addons like better-sqlite3).
-const nodeRequire = createRequire(import.meta.url);
-
-export function getDb(d1Binding?: D1Database) {
-  if (d1Binding) {
-    return drizzle(d1Binding, { schema });
+  // Cloudflare Workers: D1 binding is available via OpenNext's context.
+  // Try it unconditionally — `CF_PAGES` is NOT set on Workers, and the import
+  // is dynamic so local dev never loads the Cloudflare-only module.
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = await getCloudflareContext({ async: true });
+    if (env?.DB) return drizzle(env.DB as D1Database, { schema });
+  } catch {
+    // Not in a Cloudflare context — fall through to local SQLite.
   }
 
-  if (!db) {
+  return getDbLocal();
+}
+
+let localDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
+
+function getDbLocal() {
+  if (!localDb) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { createRequire } = require("node:module");
+      const nodeRequire = createRequire(import.meta.url);
       const sqliteModule = nodeRequire("better-sqlite3");
-      // CJS interop: the constructor may be the module itself, .Database, or .default
       const Sqlite = sqliteModule.Database || sqliteModule.default || sqliteModule;
       const { drizzle: drizzleSqlite } = nodeRequire("drizzle-orm/better-sqlite3");
       const sqlite = new Sqlite("./local.db");
-      db = drizzleSqlite(sqlite, { schema });
+      localDb = drizzleSqlite(sqlite, { schema });
     } catch (e: any) {
-      // Build/edge runtime (Cloudflare Workers) — no native sqlite available.
       console.warn("better-sqlite3 unavailable, using null DB:", e?.message || e);
       return null as any;
     }
   }
+  return localDb;
+}
 
-  return db;
+/** Synchronous DB accessor — local SQLite only. For Cloudflare use getDbAsync. */
+export function getDb(d1Binding?: D1Database) {
+  if (d1Binding) return drizzle(d1Binding, { schema });
+  return getDbLocal();
 }
 
 export type Database = ReturnType<typeof getDb>;

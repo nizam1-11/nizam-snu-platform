@@ -12,7 +12,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "deploy:build": "next build && opennextjs-cloudflare build",
+    "deploy": "npm run deploy:build && wrangler deploy",
+    "deploy:d1": "wrangler d1 migrations apply nizam-snu-db --remote"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.7",
@@ -42,6 +45,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.17",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^9.6.0",
@@ -50,14 +54,18 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "rclone.js": "^0.6.6",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.164.0"
   },
   "allowScripts": {
     "esbuild@0.18.20": true,
     "esbuild@0.25.12": true,
     "esbuild@0.28.2": true,
-    "better-sqlite3@13.2.0": true
+    "better-sqlite3@13.2.0": true,
+    "workerd@1.20261117.1": true,
+    "rclone.js@0.6.6": true
   }
 }

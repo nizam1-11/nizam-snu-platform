@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { ExternalLink, Filter, Sparkles } from "lucide-react";
@@ -41,8 +41,8 @@ type Project = {
   iconUrl?: string;
 };
 
-// Placeholder projects (will be loaded from database)
-const projects: Project[] = [
+// Hardcoded projects used as the initial data source and API fallback.
+const fallbackProjects: Project[] = [
   {
     id: "snu-automation",
     slug: "snu-automation",
@@ -124,8 +124,70 @@ const projects: Project[] = [
   },
 ];
 
+/** Icons from the hardcoded data, keyed by slug (API projects have no icon field). */
+const iconBySlug: Record<string, string> = {};
+for (const project of fallbackProjects) {
+  if (project.iconUrl) iconBySlug[project.slug] = project.iconUrl;
+}
+
+/** Defensively parse a value that may be a JSON string (D1) or an array. */
+function parseStringArray(value: unknown, fallback: string[] = []): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      // Malformed JSON — fall back.
+    }
+  }
+  return fallback;
+}
+
 export default function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [projects, setProjects] = useState<Project[]>(fallbackProjects);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/projects", { signal: controller.signal })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error("Projects request failed"))
+      )
+      .then((data: { projects?: Record<string, unknown>[] }) => {
+        const fromApi = Array.isArray(data.projects) ? data.projects : [];
+        const mapped: Project[] = fromApi
+          .map((item) => {
+            const slug = String(item.slug || "");
+            return {
+              id: String(item.id || slug || ""),
+              slug,
+              title: String(item.title || "Untitled"),
+              description: String(item.description || ""),
+              // Normalize to lowercase so the existing category filter keeps working.
+              category: String(item.category || "experimental").toLowerCase(),
+              techStack: parseStringArray(item.techStack),
+              status: String(item.status || "completed"),
+              isFeatured: item.isFeatured === true || item.isFeatured === 1,
+              githubUrl: String(item.githubUrl || "#"),
+              projectUrl: String(item.projectUrl || "#"),
+              iconUrl:
+                typeof item.iconUrl === "string" && item.iconUrl
+                  ? item.iconUrl
+                  : iconBySlug[slug],
+            };
+          })
+          .filter((project) => project.slug.length > 0);
+        // Keep the hardcoded projects when the API returns nothing.
+        if (mapped.length > 0) setProjects(mapped);
+      })
+      .catch(() => {
+        // Keep the hardcoded projects as the fallback.
+      });
+    return () => controller.abort();
+  }, []);
 
   const filteredProjects =
     activeCategory === "all"

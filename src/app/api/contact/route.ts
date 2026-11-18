@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { contactSchema } from "@/lib/validators/contact";
-import { getDb } from "@/lib/db";
+import { getDbAsync } from "@/lib/db";
 import { contactMessages } from "@/lib/db/schema";
 
 // Simple in-memory rate limiter (replace with Cloudflare KV or Upstash in production)
@@ -53,7 +53,14 @@ export async function POST(request: NextRequest) {
     const data = result.data;
 
     // Save to database
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
     const messageId = crypto.randomUUID();
     await db.insert(contactMessages).values({
       id: messageId,

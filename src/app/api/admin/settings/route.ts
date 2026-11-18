@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDbAsync } from "@/lib/db";
 import { settings } from "@/lib/db/schema";
 
 // Allowlist mirrors scripts/seed.ts keys, plus the social link keys used by the
@@ -34,9 +34,9 @@ function parseValue(raw: string): unknown {
 
 // GET /api/admin/settings — read all website settings as { key: value }
 export async function GET() {
-  let db: ReturnType<typeof getDb>;
+  let db: Awaited<ReturnType<typeof getDbAsync>>;
   try {
-    db = getDb();
+    db = await getDbAsync();
   } catch (error) {
     console.error("Settings DB init error:", error);
     return errorResponse("Database unavailable", "DB_UNAVAILABLE", 503);
@@ -61,9 +61,9 @@ export async function GET() {
 // POST /api/admin/settings — upsert website settings.
 // Accepts { settings: { [key]: value } } or a flat { [key]: value } body.
 export async function POST(request: NextRequest) {
-  let db: ReturnType<typeof getDb>;
+  let db: Awaited<ReturnType<typeof getDbAsync>>;
   try {
-    db = getDb();
+    db = await getDbAsync();
   } catch (error) {
     console.error("Settings DB init error:", error);
     return errorResponse("Database unavailable", "DB_UNAVAILABLE", 503);

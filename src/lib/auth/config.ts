@@ -1,47 +1,47 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { getDb } from "@/lib/db";
+import { getDbAsync } from "@/lib/db";
 
-// better-auth configuration
-// Database adapter is configured lazily to avoid build-time issues
+// better-auth configuration — lazily created with an async DB resolver so the
+// same code works with local SQLite (dev) and Cloudflare D1 (production).
 
-let _auth: any = null;
+let _authPromise: Promise<any> | null = null;
 
-export function getAuth() {
-  if (_auth) return _auth;
+export async function getAuthAsync() {
+  if (_authPromise) return _authPromise;
 
-  const db = getDb();
-  if (!db) {
-    return null;
-  }
+  _authPromise = (async () => {
+    const db = await getDbAsync();
+    if (!db) return null;
 
-  _auth = betterAuth({
-    database: drizzleAdapter(db, {
-      provider: "sqlite",
-    }),
-    emailAndPassword: {
-      enabled: true,
-      minPasswordLength: 8,
-      maxPasswordLength: 128,
-    },
-    session: {
-      expiresIn: 60 * 60 * 24 * 7,
-      updateAge: 60 * 60 * 24,
-      cookieCache: {
+    return betterAuth({
+      database: drizzleAdapter(db, {
+        provider: "sqlite",
+      }),
+      emailAndPassword: {
         enabled: true,
-        maxAge: 60 * 5,
+        minPasswordLength: 8,
+        maxPasswordLength: 128,
       },
-    },
-    rateLimit: {
-      window: 60,
-      max: 5,
-    },
-    trustedOrigins: [
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    ],
-  });
+      session: {
+        expiresIn: 60 * 60 * 24 * 7,
+        updateAge: 60 * 60 * 24,
+        cookieCache: {
+          enabled: true,
+          maxAge: 60 * 5,
+        },
+      },
+      rateLimit: {
+        window: 60,
+        max: 5,
+      },
+      trustedOrigins: [
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      ],
+    });
+  })();
 
-  return _auth;
+  return _authPromise;
 }
 
 export type Auth = any;

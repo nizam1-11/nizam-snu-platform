@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDbAsync } from "@/lib/db";
 import { projects, projectScreenshots } from "@/lib/db/schema";
 import { eq, desc, like, and } from "drizzle-orm";
 
@@ -13,7 +13,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = (page - 1) * limit;
 
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
     const conditions = [eq(projects.isPublished, true)];
     if (category && category !== "all") {
       conditions.push(eq(projects.category, category));
@@ -44,7 +51,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 

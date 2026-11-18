@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { productSchema } from "@/lib/validators/product";
-import { getDb } from "@/lib/db";
+import { getDbAsync } from "@/lib/db";
 import { products, productScreenshots } from "@/lib/db/schema";
 import { eq, desc, like, and } from "drizzle-orm";
 
@@ -15,7 +15,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = (page - 1) * limit;
 
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
 
     // Build query conditions
     const conditions = [eq(products.status, "published")];
@@ -62,7 +69,14 @@ export async function POST(request: NextRequest) {
     }
 
     const data = result.data;
-    const db = getDb();
+    const db = await getDbAsync();
+
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 

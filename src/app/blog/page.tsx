@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { SpotlightCard, GradientOrb } from "@/components/interactive";
@@ -22,7 +22,40 @@ const categories = [
   { id: "tutorials", label: "Tutorials" },
 ];
 
-const posts = [
+type Post = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  readingTime: number;
+  publishedAt: string;
+};
+
+/** Defensively parse a value that may be a JSON string (D1) or an array. */
+function parseStringArray(value: unknown, fallback: string[] = []): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string") {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      // Malformed JSON — fall back.
+    }
+  }
+  return fallback;
+}
+
+/** "2026-11-18T00:00:00.000Z" -> "2026-11-18" to match the hardcoded display. */
+function toDateLabel(value: unknown): string {
+  if (typeof value !== "string" || !value) return "";
+  const match = value.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : value;
+}
+
+/** Hardcoded posts used as the initial data source and API fallback. */
+const fallbackPosts: Post[] = [
   {
     id: "1",
     slug: "safe-facebook-page-automation",
@@ -62,6 +95,42 @@ export default function BlogPage() {
   const reduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [posts, setPosts] = useState<Post[]>(fallbackPosts);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/blog", { signal: controller.signal })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error("Blog request failed"))
+      )
+      .then((data: { posts?: Record<string, unknown>[] }) => {
+        const fromApi = Array.isArray(data.posts) ? data.posts : [];
+        const mapped: Post[] = fromApi
+          .map((item) => ({
+            id: String(item.id || item.slug || ""),
+            slug: String(item.slug || ""),
+            title: String(item.title || "Untitled"),
+            excerpt: String(item.excerpt || ""),
+            // Normalize to lowercase so the existing category filter keeps working.
+            category: String(item.category || "development").toLowerCase(),
+            tags: parseStringArray(item.tags),
+            readingTime:
+              typeof item.readingTime === "number" && item.readingTime > 0
+                ? item.readingTime
+                : 5,
+            publishedAt: toDateLabel(item.publishedAt),
+          }))
+          .filter((post) => post.slug.length > 0);
+        // Keep the hardcoded posts when the API returns nothing.
+        if (mapped.length > 0) setPosts(mapped);
+      })
+      .catch(() => {
+        // Keep the hardcoded posts as the fallback.
+      });
+    return () => controller.abort();
+  }, []);
 
   const filteredPosts = posts.filter((post) => {
     const matchesSearch =

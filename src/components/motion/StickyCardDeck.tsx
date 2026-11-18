@@ -29,7 +29,9 @@ function useStickyDeckEnabled() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const lg = window.matchMedia("(min-width: 1024px)");
+    // 640px instead of 1024px so the stacked deck still activates when the
+    // browser is zoomed (e.g. 150% on a 1366px screen = ~910px CSS width).
+    const lg = window.matchMedia("(min-width: 640px)");
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setEnabled(lg.matches && !reduce.matches);
     update();

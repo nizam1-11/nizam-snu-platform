@@ -59,6 +59,8 @@ export default function AdminMessagesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
   const [messages, setMessages] = useState(fallbackMessages);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +88,28 @@ export default function AdminMessagesPage() {
       cancelled = true;
     };
   }, []);
+
+  const handleDelete = async (id: string, label: string) => {
+    if (!window.confirm('Delete "' + label + '"? This cannot be undone.')) return;
+    setDeleteError("");
+    setDeletingId(id);
+    try {
+      const res = await fetch("/api/messages/" + id, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        setMessages((prev) => prev.filter((x) => x.id !== id));
+        setSelectedMessage((prev) => (prev === id ? null : prev));
+      } else {
+        setDeleteError("Could not delete. Please try again.");
+      }
+    } catch {
+      setDeleteError("Could not delete. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredMessages = messages.filter((m) => {
     const matchesSearch =
@@ -137,6 +161,10 @@ export default function AdminMessagesPage() {
           </select>
         </div>
       </div>
+
+      {deleteError && (
+        <p role="alert" className="mb-4 text-sm text-error">{deleteError}</p>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Message List */}
@@ -223,7 +251,7 @@ export default function AdminMessagesPage() {
                   <Archive className="w-4 h-4" />
                   Archive
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-error glass rounded-xl hover:bg-error/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error">
+                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-error glass rounded-xl hover:bg-error/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error" onClick={() => handleDelete(selected.id, selected.subject || selected.id)} disabled={deletingId === selected.id}>
                   <Trash2 className="w-4 h-4" />
                   Delete
                 </button>

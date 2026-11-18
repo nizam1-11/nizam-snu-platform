@@ -59,6 +59,8 @@ export default function AdminFaqPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [faqs, setFaqs] = useState(fallbackFaqs);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +86,27 @@ export default function AdminFaqPage() {
       cancelled = true;
     };
   }, []);
+
+  const handleDelete = async (id: string, label: string) => {
+    if (!window.confirm('Delete "' + label + '"? This cannot be undone.')) return;
+    setDeleteError("");
+    setDeletingId(id);
+    try {
+      const res = await fetch("/api/faq/" + id, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        setFaqs((prev) => prev.filter((x) => x.id !== id));
+      } else {
+        setDeleteError("Could not delete. Please try again.");
+      }
+    } catch {
+      setDeleteError("Could not delete. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredFaqs = faqs.filter((f) => {
     const matchesSearch = f.question
@@ -146,6 +169,10 @@ export default function AdminFaqPage() {
         </div>
       </div>
 
+      {deleteError && (
+        <p role="alert" className="mb-4 text-sm text-error">{deleteError}</p>
+      )}
+
       <div className="space-y-4">
         {filteredFaqs.map((faq) => (
           <motion.div
@@ -176,10 +203,13 @@ export default function AdminFaqPage() {
                 <p className="text-sm text-text-secondary">{faq.answer}</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button className="p-2 rounded-lg text-text-secondary hover:text-accent-blue hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue">
+                <Link
+                  href={"/admin/faq/" + faq.id + "/edit"}
+                  className="p-2 rounded-lg text-text-secondary hover:text-accent-blue hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+                >
                   <Edit className="w-4 h-4" />
-                </button>
-                <button className="p-2 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error">
+                </Link>
+                <button className="p-2 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error" title="Delete" onClick={() => handleDelete(faq.id, faq.question || faq.id)} disabled={deletingId === faq.id}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

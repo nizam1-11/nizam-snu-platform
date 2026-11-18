@@ -58,6 +58,8 @@ export default function AdminProjectsPage() {
   const reduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState(fallbackProjects);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +88,27 @@ export default function AdminProjectsPage() {
     };
   }, []);
 
+  const handleDelete = async (id: string, label: string) => {
+    if (!window.confirm('Delete "' + label + '"? This cannot be undone.')) return;
+    setDeleteError("");
+    setDeletingId(id);
+    try {
+      const res = await fetch("/api/projects/" + id, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        setProjects((prev) => prev.filter((x) => x.id !== id));
+      } else {
+        setDeleteError("Could not delete. Please try again.");
+      }
+    } catch {
+      setDeleteError("Could not delete. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filteredProjects = projects.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -111,6 +134,10 @@ export default function AdminProjectsPage() {
           </Link>
         </motion.div>
       </div>
+
+      {deleteError && (
+        <p role="alert" className="mb-4 text-sm text-error">{deleteError}</p>
+      )}
 
       <div className="relative mb-6">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
@@ -192,7 +219,7 @@ export default function AdminProjectsPage() {
                       <Link href={`/admin/projects/${project.id}/edit`} className="p-2 rounded-lg text-text-secondary hover:text-accent-blue hover:bg-surface-elevated transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue" title="Edit">
                         <Edit className="w-4 h-4" />
                       </Link>
-                      <button className="p-2 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error" title="Delete">
+                      <button className="p-2 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error" title="Delete" onClick={() => handleDelete(project.id, project.title || project.id)} disabled={deletingId === project.id}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

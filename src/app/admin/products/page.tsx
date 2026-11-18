@@ -72,6 +72,8 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [products, setProducts] = useState(fallbackProducts);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +102,27 @@ export default function AdminProductsPage() {
       cancelled = true;
     };
   }, []);
+
+  const handleDelete = async (id: string, label: string) => {
+    if (!window.confirm('Delete "' + label + '"? This cannot be undone.')) return;
+    setDeleteError("");
+    setDeletingId(id);
+    try {
+      const res = await fetch("/api/products/" + id, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        setProducts((prev) => prev.filter((x) => x.id !== id));
+      } else {
+        setDeleteError("Could not delete. Please try again.");
+      }
+    } catch {
+      setDeleteError("Could not delete. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name
@@ -132,6 +155,10 @@ export default function AdminProductsPage() {
           </Link>
         </motion.div>
       </div>
+
+      {deleteError && (
+        <p role="alert" className="mb-4 text-sm text-error">{deleteError}</p>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -241,6 +268,8 @@ export default function AdminProductsPage() {
                       <button
                         className="p-2 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error"
                         title="Delete"
+                        onClick={() => handleDelete(product.id, product.name || product.id)}
+                        disabled={deletingId === product.id}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

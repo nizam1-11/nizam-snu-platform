@@ -123,7 +123,7 @@ export default function AdminMessagesPage() {
                 className={cn(
                   "w-full text-left glass rounded-xl p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue",
                   selectedMessage === msg.id
-                    ? "ring-2 ring-accent-blue/70 border-accent-blue/40 shadow-[0_0_28px_-14px_rgb(212_175_55_/_0.9)]"
+                    ? "ring-2 ring-accent-blue/70 border-accent-blue/40 shadow-[0_0_28px_-14px_rgb(181_121_74_/_0.9)]"
                     : "hover:bg-surface-elevated/50"
                 )}
               >

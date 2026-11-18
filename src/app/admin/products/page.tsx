@@ -96,7 +96,7 @@ export default function AdminProductsPage() {
         <motion.div whileTap={reduceMotion ? undefined : { scale: 0.98 }}>
           <Link
             href="/admin/products/new"
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(212_175_55_/_0.9)] hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(181_121_74_/_0.9)] hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />
             Add Product
@@ -157,7 +157,7 @@ export default function AdminProductsPage() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center shadow-[0_8px_22px_-12px_rgb(212_175_55_/_0.9)]">
+                      <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center shadow-[0_8px_22px_-12px_rgb(181_121_74_/_0.9)]">
                         <Package className="w-5 h-5 text-white" />
                       </div>
                       <div className="min-w-0">

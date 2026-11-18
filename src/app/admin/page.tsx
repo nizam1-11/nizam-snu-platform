@@ -80,7 +80,7 @@ export default function AdminDashboard() {
           >
             <div className="flex items-center justify-between mb-5">
               <div className={cn(
-                "w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-[0_10px_28px_-12px_rgb(212_175_55_/_0.7)]",
+                "w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-[0_10px_28px_-12px_rgb(181_121_74_/_0.7)]",
                 stat.color
               )}>
                 <stat.icon className="w-5 h-5 text-white" />
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
                 key={index}
                 className="flex items-center gap-3 px-3 py-3 rounded-xl bg-surface-deep/50 border border-border/60"
               >
-                <span className="w-2 h-2 rounded-full bg-accent-blue shadow-[0_0_8px_rgb(212_175_55_/_0.8)]" />
+                <span className="w-2 h-2 rounded-full bg-accent-blue shadow-[0_0_8px_rgb(181_121_74_/_0.8)]" />
                 <div className="flex-1">
                   <p className="text-sm text-text-primary">{activity.action}</p>
                   <p className="text-xs text-text-muted">{activity.time}</p>

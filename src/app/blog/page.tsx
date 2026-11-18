@@ -113,7 +113,7 @@ export default function BlogPage() {
                 placeholder="Search articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 glass border border-border rounded-xl text-text-primary placeholder:text-text-muted transition-all focus:outline-none focus:border-accent-blue/60 focus:ring-2 focus:ring-accent-blue/20 focus:shadow-[0_0_26px_-10px_rgb(212_175_55_/_0.55)]"
+                className="w-full pl-11 pr-4 py-3 glass border border-border rounded-xl text-text-primary placeholder:text-text-muted transition-all focus:outline-none focus:border-accent-blue/60 focus:ring-2 focus:ring-accent-blue/20 focus:shadow-[0_0_26px_-10px_rgb(181_121_74_/_0.55)]"
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -126,7 +126,7 @@ export default function BlogPage() {
                   className={cn(
                     "px-3.5 py-1.5 text-sm rounded-full transition-colors duration-300",
                     activeCategory === cat.id
-                      ? "text-white bg-gradient-to-r from-accent-blue to-accent-purple shadow-[0_8px_24px_-12px_rgb(212_175_55_/_0.9)]"
+                      ? "text-white bg-gradient-to-r from-accent-blue to-accent-purple shadow-[0_8px_24px_-12px_rgb(181_121_74_/_0.9)]"
                       : "glass text-text-secondary hover:text-text-primary hover:border-accent-blue/40"
                   )}
                 >

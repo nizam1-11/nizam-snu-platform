@@ -167,7 +167,7 @@ function StickyCard({ children, index, base, step }: StickyCardProps) {
       }}
     >
       <motion.div
-        className="relative rounded-2xl bg-[#14120f]/95 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)] ring-1 ring-white/5"
+        className="relative rounded-2xl bg-[#15161f]/95 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)] ring-1 ring-white/5"
         style={{ scale, opacity }}
       >
         {children}

@@ -76,7 +76,7 @@ export default function AdminProjectsPage() {
         <motion.div whileTap={reduceMotion ? undefined : { scale: 0.98 }}>
           <Link
             href="/admin/projects/new"
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(212_175_55_/_0.9)] hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(181_121_74_/_0.9)] hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />
             Add Project

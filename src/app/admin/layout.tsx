@@ -52,7 +52,7 @@ export default function AdminLayout({
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-5 border-b border-border">
             <Link href="/admin" className="flex items-center gap-3 group">
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center text-white font-bold text-sm shadow-[0_8px_24px_-10px_rgb(212_175_55_/_0.9)]">
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center text-white font-bold text-sm shadow-[0_8px_24px_-10px_rgb(181_121_74_/_0.9)]">
                 N
                 <Sparkles className="w-2.5 h-2.5 absolute -top-1 -right-1 text-accent-cyan" />
               </div>

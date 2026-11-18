@@ -330,7 +330,7 @@ export default function AdminSettingsPage() {
               className={cn(
                 "relative shrink-0 w-12 h-6 rounded-full border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base",
                 settings.analyticsEnabled
-                  ? "bg-accent-blue border-accent-blue/60 shadow-[0_0_16px_-4px_rgb(212_175_55_/_0.9)]"
+                  ? "bg-accent-blue border-accent-blue/60 shadow-[0_0_16px_-4px_rgb(181_121_74_/_0.9)]"
                   : "bg-surface-elevated border-border"
               )}
             >
@@ -385,7 +385,7 @@ export default function AdminSettingsPage() {
             onClick={handleSave}
             disabled={saving}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(212_175_55_/_0.9)] hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(181_121_74_/_0.9)] hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             {saving ? "Saving..." : "Save Settings"}

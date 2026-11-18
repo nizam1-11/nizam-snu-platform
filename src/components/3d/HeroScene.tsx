@@ -28,13 +28,13 @@ export type ScenePalette = {
 };
 
 const FALLBACK_PALETTE: ScenePalette = {
-  gold: "#D4AF37",
-  brightGold: "#F5D67B",
-  bronze: "#8A6A1F",
-  champagne: "#E8C66A",
-  amber: "#D9A94A",
-  haze: "#B3A688",
-  deep: "#14120F",
+  gold: "#b5794a",
+  brightGold: "#d8a46b",
+  bronze: "#84522e",
+  champagne: "#c99a63",
+  amber: "#c08250",
+  haze: "#a2968b",
+  deep: "#15161f",
 };
 
 const HEX_RE = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -98,7 +98,7 @@ function readScenePalette(): ScenePalette {
   return {
     gold: read("--color-accent-blue", FALLBACK_PALETTE.gold),
     brightGold: read("--color-accent-electric", FALLBACK_PALETTE.brightGold),
-    // Exact bronze lives in --rgb-gold-deep (138 106 31); --color-accent-purple
+    // Exact bronze lives in --rgb-gold-deep (132 82 46); --color-accent-purple
     // is a brighter gold, so reading it would shift the scene's look.
     bronze: read("--rgb-gold-deep", FALLBACK_PALETTE.bronze),
     champagne: read("--color-accent-cyan", FALLBACK_PALETTE.champagne),

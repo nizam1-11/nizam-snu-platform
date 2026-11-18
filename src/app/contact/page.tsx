@@ -48,7 +48,7 @@ const contactInfo = [
 ];
 
 const inputClass =
-  "w-full bg-surface/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted transition-all duration-300 focus:outline-none focus:border-accent-blue/60 focus:ring-2 focus:ring-accent-blue/20 focus:shadow-[0_0_26px_-10px_rgb(212_175_55_/_0.55)]";
+  "w-full bg-surface/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted transition-all duration-300 focus:outline-none focus:border-accent-blue/60 focus:ring-2 focus:ring-accent-blue/20 focus:shadow-[0_0_26px_-10px_rgb(181_121_74_/_0.55)]";
 
 export default function ContactPage() {
   const reduceMotion = useReducedMotion();
@@ -322,7 +322,7 @@ export default function ContactPage() {
                   disabled={status === "loading"}
                   whileHover={reduceMotion ? undefined : { y: -2 }}
                   whileTap={reduceMotion ? undefined : { scale: 0.99 }}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-base font-semibold text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_10px_36px_-14px_rgb(212_175_55_/_0.8)] hover:shadow-[0_14px_44px_-12px_rgb(133_92_255_/_0.8)] transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-base font-semibold text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_10px_36px_-14px_rgb(181_121_74_/_0.8)] hover:shadow-[0_14px_44px_-12px_rgb(133_92_255_/_0.8)] transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {status === "loading" ? (
                     <>

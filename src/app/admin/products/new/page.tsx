@@ -404,7 +404,7 @@ export default function NewProductPage() {
               onClick={() => handleSave("published")}
               disabled={saving}
               whileTap={reduceMotion ? undefined : { scale: 0.99 }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(212_175_55_/_0.9)] hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-blue to-accent-purple rounded-xl shadow-[0_8px_24px_-12px_rgb(181_121_74_/_0.9)] hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               <Eye className="w-4 h-4" />
               {saving ? "Publishing..." : "Publish Product"}

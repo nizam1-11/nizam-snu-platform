@@ -64,7 +64,7 @@ export default function LegalLayout({
                       className={cn(
                         "relative flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-300",
                         isActive
-                          ? "text-accent-blue bg-accent-blue/10 shadow-[inset_0_0_20px_-8px_rgb(212_175_55_/_0.6)]"
+                          ? "text-accent-blue bg-accent-blue/10 shadow-[inset_0_0_20px_-8px_rgb(181_121_74_/_0.6)]"
                           : "text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60"
                       )}
                     >

@@ -2,9 +2,9 @@
 @import "tw-animate-css";
 
 /* ─────────────────────────────────────────────────────────────
-   DESIGN SYSTEM — Premium GOLD + BLACK
+   DESIGN SYSTEM — Premium COPPER + BLACK
    - Every legacy token alias is preserved and re-mapped to the
-     gold palette so existing pages keep working untouched.
+     copper palette so existing pages keep working untouched.
    - Accent aliases intentionally collapse into the gold family:
      blue→primary gold, electric→bright gold, purple→bronze,
      cyan→champagne, pink→amber. No blue / purple / orange hues.
@@ -12,26 +12,26 @@
    ───────────────────────────────────────────────────────────── */
 @theme {
   /* ---- New foundational palette → bg-bg-base, bg-surface-card, ... ---- */
-  --color-bg-base: #070706;
-  --color-bg-secondary: #0e0d0b;
-  --color-surface-deep: #14120f;
-  --color-surface-card: #1a1713;
-  --color-surface-elevated: #221e18;
-  --color-accent-violet: #c9a227; /* deep warm gold */
-  --color-text-muted: #837962;
+  --color-bg-base: #06070b;
+  --color-bg-secondary: #0d0f16;
+  --color-surface-deep: #15161f;
+  --color-surface-card: #1b1d27;
+  --color-surface-elevated: #232530;
+  --color-accent-violet: #a87142; /* deep warm gold */
+  --color-text-muted: #7a6f66;
 
   /* ---- Legacy aliases → remapped to gold (DO NOT RENAME) ---- */
-  --color-background: #070706;
-  --color-surface: #0e0d0b;
-  --color-surface-light: #221e18;
-  --color-border: #39311f;
-  --color-text-primary: #f7f1e3; /* warm ivory */
-  --color-text-secondary: #b3a688;
-  --color-accent-blue: #d4af37; /* primary gold */
-  --color-accent-electric: #f5d67b; /* bright gold */
-  --color-accent-purple: #c99a3b; /* bronze */
-  --color-accent-cyan: #e8c66a; /* soft champagne */
-  --color-accent-pink: #d9a94a; /* amber */
+  --color-background: #06070b;
+  --color-surface: #0d0f16;
+  --color-surface-light: #232530;
+  --color-border: #28242a;
+  --color-text-primary: #efe6da; /* warm ivory */
+  --color-text-secondary: #a2968b;
+  --color-accent-blue: #b5794a; /* primary gold */
+  --color-accent-electric: #d8a46b; /* bright gold */
+  --color-accent-purple: #9a6438; /* bronze */
+  --color-accent-cyan: #c99a63; /* soft champagne */
+  --color-accent-pink: #c08250; /* amber */
   --color-success: #34d399; /* semantic green — kept readable */
   --color-warning: #fbbf24; /* semantic amber — kept readable */
   --color-error: #fb7185; /* semantic red — kept readable */
@@ -49,14 +49,14 @@
   --foreground: var(--color-text-primary);
 
   /* RGB channels -> token-driven alpha, e.g. rgb(var(--rgb-accent-blue) / 0.15) */
-  --rgb-accent-blue: 212 175 55; /* primary gold  #D4AF37 */
-  --rgb-accent-purple: 201 154 59; /* bronze       #C99A3B */
-  --rgb-accent-violet: 201 162 39; /* deep gold    #C9A227 */
-  --rgb-accent-electric: 245 214 123; /* bright gold  #F5D67B */
-  --rgb-bg-base: 7 7 6;
-  --rgb-surface-card: 26 23 19;
-  --rgb-gold-deep: 138 106 31; /* deep gold / bronze #8A6A1F */
-  --rgb-gold-bright: 245 214 123;
+  --rgb-accent-blue: 181 121 74; /* primary gold  #b5794a */
+  --rgb-accent-purple: 154 100 56; /* bronze       #9a6438 */
+  --rgb-accent-violet: 168 113 66; /* deep gold    #a87142 */
+  --rgb-accent-electric: 216 164 107; /* bright gold  #d8a46b */
+  --rgb-bg-base: 6 7 11;
+  --rgb-surface-card: 27 29 39;
+  --rgb-gold-deep: 132 82 46; /* deep gold / bronze #84522e */
+  --rgb-gold-bright: 216 164 107;
 
   /* Cursor spotlight position (updated by JS, CSS vars only) */
   --spotlight-x: 50%;
@@ -135,7 +135,7 @@ body {
 .text-gradient-primary,
 .text-gradient-gold,
 .gradient-text-gold {
-  background: linear-gradient(120deg, #d4af37, #f5d67b);
+  background: linear-gradient(120deg, #b5794a, #d8a46b);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -144,7 +144,7 @@ body {
 
 .gradient-text-electric,
 .text-gradient-electric {
-  background: linear-gradient(120deg, #c99a3b, #f5d67b, #e8c66a);
+  background: linear-gradient(120deg, #9a6438, #d8a46b, #c99a63);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -154,7 +154,7 @@ body {
 /* Deep gold → champagne, for heavier display type */
 .text-gradient-deep-gold,
 .gradient-text-deep-gold {
-  background: linear-gradient(120deg, #8a6a1f, #d4af37);
+  background: linear-gradient(120deg, #84522e, #b5794a);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -198,7 +198,7 @@ body {
       rgb(var(--rgb-gold-deep) / 0.22) 0%,
       transparent 74%
     ),
-    linear-gradient(135deg, #070706 0%, #0e0d0b 55%, #14120f 100%);
+    linear-gradient(135deg, #06070b 0%, #0d0f16 55%, #15161f 100%);
 }
 
 /* ─── Breathing ambient glow (atmosphere only; transform/opacity) ─── */
@@ -294,7 +294,7 @@ body {
   z-index: 1;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(120deg, #d4af37, #f5d67b);
+  background: linear-gradient(120deg, #b5794a, #d8a46b);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);

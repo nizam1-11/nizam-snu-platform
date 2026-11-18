@@ -138,7 +138,7 @@ export default function SupportPage() {
                     className="glass card-interactive rounded-2xl p-6 h-full flex flex-col group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
                   >
                     <div className={cn(
-                      "w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4 shadow-[0_10px_30px_-12px_rgb(212_175_55_/_0.7)]",
+                      "w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4 shadow-[0_10px_30px_-12px_rgb(181_121_74_/_0.7)]",
                       cat.color
                     )}>
                       <cat.icon className="w-6 h-6 text-white" />

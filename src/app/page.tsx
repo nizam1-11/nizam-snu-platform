@@ -51,7 +51,7 @@ export default function Home() {
               <style>{`
                 .hero-headline > span > [data-reveal-word] { -webkit-text-fill-color: currentColor; }
                 .hero-headline > span:nth-of-type(3) > [data-reveal-word] {
-                  background: linear-gradient(120deg, #d4af37, #f5d67b);
+                  background: linear-gradient(120deg, #b5794a, #d8a46b);
                   -webkit-background-clip: text;
                   background-clip: text;
                   color: transparent;

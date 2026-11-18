@@ -185,7 +185,7 @@ export default function BlogDetailPage({
 
                 {/* Author card */}
                 <div className="flex items-center gap-4 pt-6 border-t border-white/10">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-accent-blue/40 shadow-[0_8px_28px_-10px_rgb(212_175_55_/_0.9)]">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-accent-blue/40 shadow-[0_8px_28px_-10px_rgb(181_121_74_/_0.9)]">
                     <Image
                       src="/images/profile.jpg"
                       alt={post.author || "Nizam"}

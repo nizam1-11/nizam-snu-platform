@@ -24,14 +24,14 @@ export interface GradientOrbProps {
 /**
  * Literal gold-family colors (matching the globals.css tokens) keep the orb
  * self-contained and correct even in the pre-hydration fallback.
- *   #D4AF37 primary gold · #C99A3B bronze · #F5D67B bright gold · #E8C66A champagne
+ *   #b5794a primary gold · #9a6438 bronze · #d8a46b bright gold · #c99a63 champagne
  */
 const TINT: Record<Exclude<OrbColor, "auto">, string> = {
-  blue: "rgba(212, 175, 55, 0.9)", // #D4AF37
-  purple: "rgba(201, 154, 59, 0.9)", // #C99A3B
-  cyan: "rgba(245, 214, 123, 0.85)", // #F5D67B
-  violet: "rgba(232, 198, 106, 0.9)", // #E8C66A
-  gold: "rgba(212, 175, 55, 0.9)", // #D4AF37 alias
+  blue: "rgba(212, 175, 55, 0.9)", // #b5794a
+  purple: "rgba(201, 154, 59, 0.9)", // #9a6438
+  cyan: "rgba(245, 214, 123, 0.85)", // #d8a46b
+  violet: "rgba(232, 198, 106, 0.9)", // #c99a63
+  gold: "rgba(212, 175, 55, 0.9)", // #b5794a alias
 };
 
 const AUTO_GRADIENT = `radial-gradient(circle at 34% 32%, ${TINT.cyan} 0%, ${TINT.gold} 34%, ${TINT.violet} 68%, transparent 74%)`;

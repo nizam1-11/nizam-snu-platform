@@ -33,21 +33,22 @@ function registerGsap() {
 
 /**
  * Hydration-safe capability gate. Server and first client render are identical
- * (the non-pinned fallback); pinning is switched on only after mount on large
- * screens when motion is allowed — mirrors StickyCardDeck/Reveal/TiltCard.
+ * (the non-pinned fallback); pinning is switched on only after mount on viewports
+ * ≥ 480px when motion is allowed — mirrors StickyCardDeck/Reveal/TiltCard.
+ * Below 480px and for motion opt-out, the plain snap-scroll row stays in place.
  */
 function usePinnedEnabled() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const lg = window.matchMedia("(min-width: 1024px)");
+    const mobile = window.matchMedia("(min-width: 480px)");
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setEnabled(lg.matches && !reduce.matches);
+    const update = () => setEnabled(mobile.matches && !reduce.matches);
     update();
-    lg.addEventListener("change", update);
+    mobile.addEventListener("change", update);
     reduce.addEventListener("change", update);
     return () => {
-      lg.removeEventListener("change", update);
+      mobile.removeEventListener("change", update);
       reduce.removeEventListener("change", update);
     };
   }, []);
@@ -119,11 +120,13 @@ function ShowcaseCard({
 /**
  * Horizontal scroll showcase.
  *
- * - lg+ with motion allowed: the OUTER section is pinned by ScrollTrigger while
- *   the inner flex track translates on `x` from 0 to
+ * - ≥480px with motion allowed: the OUTER section is pinned by ScrollTrigger
+ *   while the inner flex track translates on `x` from 0 to
  *   `-(track.scrollWidth - viewportWidth)` with a smooth scrub. Distance and
- *   end are function-based + `invalidateOnRefresh` so they survive resizes.
- * - <lg OR prefers-reduced-motion (and pre-mount on every viewport): a plain
+ *   end are function-based + `invalidateOnRefresh` so they survive resizes and
+ *   orientation changes. Cards are ~82vw on small screens (capped) so 2+ of them
+ *   create travel; spacing/hint tighten below sm.
+ * - <480px OR prefers-reduced-motion (and pre-mount on every viewport): a plain
  *   snap-scrolling overflow row with all cards reachable — no pin, no listeners.
  *
  * The enable decision lives behind a mounted gate so SSR and the first client
@@ -194,10 +197,10 @@ export function HorizontalShowcase({
       <span
         ref={hintRef}
         aria-hidden="true"
-        className="flex items-center gap-2 text-sm text-text-secondary"
+        className="flex items-center gap-1.5 text-xs text-text-secondary sm:gap-2 sm:text-sm"
       >
         Scroll to explore
-        <ArrowRight className="h-4 w-4 text-accent-electric" />
+        <ArrowRight className="h-3.5 w-3.5 text-accent-electric sm:h-4 sm:w-4" />
       </span>
     </div>
   );
@@ -216,7 +219,7 @@ export function HorizontalShowcase({
         <div className="section-container relative z-10">{header}</div>
         <div
           ref={trackRef}
-          className="relative z-10 flex w-max gap-8 px-6 pb-4 will-change-transform lg:gap-12 lg:px-[6vw]"
+          className="relative z-10 flex w-max gap-4 px-4 pb-4 will-change-transform sm:gap-8 sm:px-6 lg:gap-12 lg:px-[6vw]"
         >
           {items.map((item) => (
             <ShowcaseCard key={item.slug} item={item} />
@@ -232,7 +235,7 @@ export function HorizontalShowcase({
       className={cn("relative w-full py-16", className)}
     >
       <div className="section-container">{header}</div>
-      <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto px-4 pb-6 sm:px-6 lg:px-8 [scrollbar-width:thin]">
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 sm:gap-6 sm:px-6 lg:px-8 [scrollbar-width:thin]">
         {items.map((item) => (
           <ShowcaseCard key={item.slug} item={item} className="snap-start" />
         ))}

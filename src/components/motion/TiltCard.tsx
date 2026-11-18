@@ -10,8 +10,12 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Shared capability gate: fine pointer + motion allowed.
- * Exported so the interactive components can disable effects identically.
+ * Shared capability gate.
+ * `interactive` = motion is mounted and allowed. The global Motion toggle is
+ * reflected through `useReducedMotion`, so that is the only opt-out. It is
+ * deliberately NOT gated on coarse pointers: tap/drag work on touch, so the
+ * pointer effects stay on there too. `finePointer` is exposed for the single
+ * effect that is meaningless on touch (the fake cursor).
  */
 export function usePointerCapabilities() {
   const reduce = useReducedMotion();
@@ -31,13 +35,17 @@ export function usePointerCapabilities() {
   }, []);
 
   return {
-    interactive: mounted && !reduce && !coarse,
+    interactive: mounted && !reduce,
     reduce: Boolean(reduce),
     coarse,
+    /** True only when the primary pointer is fine (not touch/coarse). */
+    finePointer: !coarse,
   };
 }
 
 const SPRING = { stiffness: 260, damping: 24, mass: 0.4 } as const;
+/** Restrained tilt ceiling for touch drag/tap (degrees). */
+const TOUCH_MAX_TILT = 7;
 
 export interface TiltCardProps {
   children: React.ReactNode;
@@ -55,9 +63,10 @@ export interface TiltCardProps {
 }
 
 /**
- * Restrained pointer tilt with a spring back to rest.
- * Touch / reduced-motion users get a plain, static card (no listeners, no glare).
- * Only transform + opacity are animated — no layout shift.
+ * Restrained pointer tilt with a spring back to rest. Touch taps/drags tilt
+ * with a smaller ceiling and spring back on release; only reduced motion (the
+ * global Motion toggle) disables it. Only transform + opacity are animated —
+ * no layout shift.
  */
 export function TiltCard({
   children,
@@ -87,9 +96,12 @@ export function TiltCard({
       const px = (event.clientX - rect.left) / rect.width;
       const py = (event.clientY - rect.top) / rect.height;
 
-      // Clamp to [-max, max]; MovementX/Y values are damped by the spring.
-      rawY.set((px - 0.5) * max * 2);
-      rawX.set((0.5 - py) * max * 2);
+      // Touch uses a smaller ceiling so a tap/drag never swings too far;
+      // values are clamped and further damped by the spring.
+      const angle =
+        event.pointerType === "touch" ? Math.min(max, TOUCH_MAX_TILT) : max;
+      rawY.set((px - 0.5) * angle * 2);
+      rawX.set((0.5 - py) * angle * 2);
 
       const surface = glareRef.current;
       if (surface) {
@@ -107,7 +119,27 @@ export function TiltCard({
     setHovered(false);
   }, [rawX, rawY]);
 
-  // Plain card for touch / reduced-motion — zero overhead, zero layout shift.
+  // A tap may not emit a pointermove before pointerup — position once on
+  // pointerdown, then always spring back on release/cancel so nothing sticks.
+  const handleTouchDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType !== "touch") return;
+      handleMove(event);
+      setHovered(true);
+    },
+    [handleMove]
+  );
+  const handleTouchEnd = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType !== "touch") return;
+      rawX.set(0);
+      rawY.set(0);
+      setHovered(false);
+    },
+    [rawX, rawY]
+  );
+
+  // Plain card only for reduced-motion — zero overhead, zero layout shift.
   if (!interactive) {
     return <div className={cn(className)}>{children}</div>;
   }
@@ -116,6 +148,9 @@ export function TiltCard({
     <motion.div
       className={cn("relative", className)}
       onPointerMove={handleMove}
+      onPointerDown={handleTouchDown}
+      onPointerUp={handleTouchEnd}
+      onPointerCancel={handleTouchEnd}
       onPointerEnter={handleEnter}
       onPointerLeave={handleLeave}
       style={{

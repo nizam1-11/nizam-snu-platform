@@ -20,8 +20,9 @@ export interface ParallaxLayerProps {
 
 /**
  * Lightweight pointer + scroll parallax. Scroll drives Y, pointer drives X/Y;
- * both are spring-smoothed and combined into a single transform.
- * Touch / reduced-motion users get a plain, completely static wrapper.
+ * both are spring-smoothed and combined into a single transform. Touch drags
+ * drive the pointer offset too and it springs back on release. Only reduced
+ * motion gets a plain, completely static wrapper.
  */
 export function ParallaxLayer({
   children,
@@ -69,14 +70,22 @@ export function ParallaxLayer({
       rawY.set(0);
     };
 
+    const onTouchEnd = (event: PointerEvent) => {
+      if (event.pointerType === "touch") reset();
+    };
+
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("blur", reset);
     document.addEventListener("mouseleave", reset);
+    window.addEventListener("pointerup", onTouchEnd);
+    window.addEventListener("pointercancel", onTouchEnd);
 
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("blur", reset);
       document.removeEventListener("mouseleave", reset);
+      window.removeEventListener("pointerup", onTouchEnd);
+      window.removeEventListener("pointercancel", onTouchEnd);
     };
   }, [interactive, rawX, rawY]);
 

@@ -123,22 +123,28 @@ function supportsWebGL() {
 
 /**
  * null while pending so the first (SSR/client) render is always the plain
- * image. Reduced motion, coarse pointers and no-WebGL devices never mount the
- * canvas at all.
+ * image. Reduced motion (the global Motion toggle) and no-WebGL devices never
+ * mount the canvas at all. Touch/coarse pointers ARE supported now — the effect
+ * is driven by tap/drag. `touch` is returned separately so the canvas can cap
+ * DPR lower on mobile without gating the effect itself.
  */
-function useWebGLEligibility(): boolean | null {
-  const [eligible, setEligible] = useState<boolean | null>(null);
+function useWebGLEligibility(): { eligible: boolean | null; touch: boolean } {
+  const [state, setState] = useState<{ eligible: boolean | null; touch: boolean }>({
+    eligible: null,
+    touch: false,
+  });
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const coarse = window.matchMedia("(pointer: coarse)").matches;
-      setEligible(!reduce && !coarse && supportsWebGL());
+      // Coarse pointer is no longer a gate — only used to tune touch rendering.
+      const touch = window.matchMedia("(pointer: coarse)").matches;
+      setState({ eligible: !reduce && supportsWebGL(), touch });
     });
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  return eligible;
+  return state;
 }
 
 type DistortedImageProps = {
@@ -248,7 +254,7 @@ class WebGLErrorBoundary extends Component<
 }
 
 export function PhotoDistortion() {
-  const eligible = useWebGLEligibility();
+  const { eligible, touch } = useWebGLEligibility();
   const [hovered, setHovered] = useState(false);
   const [active, setActive] = useState(false);
   const [ready, setReady] = useState(false);
@@ -293,12 +299,36 @@ export function PhotoDistortion() {
     [updateMouse]
   );
 
+  const handleMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      updateMouse(event);
+      // A touch drag has no pointerenter — keep the effect alive while dragging.
+      if (event.pointerType === "touch") {
+        if (leaveTimer.current) {
+          clearTimeout(leaveTimer.current);
+          leaveTimer.current = null;
+        }
+        setHovered(true);
+        setActive(true);
+      }
+    },
+    [updateMouse]
+  );
+
   const handleLeave = useCallback(() => {
     setHovered(false);
     // Keep the loop alive just long enough to ease intensity back down.
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
     leaveTimer.current = setTimeout(() => setActive(false), SETTLE_MS);
   }, []);
+
+  const handlePointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      // A mouse keeps hovering after a click; only touch/pen release eases back.
+      if (event.pointerType !== "mouse") handleLeave();
+    },
+    [handleLeave]
+  );
 
   const onReady = useCallback(() => setReady(true), []);
   const handleError = useCallback(() => setFailed(true), []);
@@ -311,6 +341,8 @@ export function PhotoDistortion() {
       : "demand";
 
   const showCanvas = eligible === true && !failed;
+  // Explicit tuple so R3F's Dpr type is satisfied on both branches.
+  const dpr: [number, number] = touch ? [1, 1.25] : [1, 1.5];
 
   return (
     <div className="relative h-full w-full">
@@ -325,13 +357,17 @@ export function PhotoDistortion() {
               ready ? "opacity-100" : "opacity-0"
             }`}
             onPointerEnter={handleEnter}
-            onPointerMove={updateMouse}
+            onPointerDown={handleEnter}
+            onPointerMove={handleMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handleLeave}
             onPointerLeave={handleLeave}
+            style={{ touchAction: "pan-y" }}
           >
             <Canvas
               orthographic
               camera={{ position: [0, 0, 1], zoom: 1 }}
-              dpr={[1, 1.5]}
+              dpr={dpr}
               frameloop={frameLoop}
               gl={{
                 alpha: true,

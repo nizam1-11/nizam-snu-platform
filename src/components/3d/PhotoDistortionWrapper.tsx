@@ -56,6 +56,9 @@ export function PhotoDistortionWrapper() {
 
   useEffect(() => {
     // Defer to the next frame so detection never blocks hydration.
+    // Gate is WebGL-only on purpose: touch/coarse-pointer devices get the
+    // dynamic canvas too. The global Motion opt-out is enforced downstream in
+    // PhotoDistortion, so toggling Motion Off still leaves the plain photo.
     const raf = requestAnimationFrame(() => setWebgl(supportsWebGL()));
     return () => cancelAnimationFrame(raf);
   }, []);

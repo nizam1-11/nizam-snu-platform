@@ -12,8 +12,9 @@ const DURATION = 500;
  * lived, gold radial-gradient span at the click point of any button / primary
  * link / [data-ripple] element. The ripple is pure decoration: pointer-events
  * none, no preventDefault/stopPropagation, so navigation and forms are
- * untouched. Node count is capped and every node/timer is cleaned up.
- * Disabled entirely (no listener, renders null) for touch / reduced motion.
+ * untouched. Works on tap (pointerdown fires for touch) as well as click.
+ * Node count is capped and every node/timer is cleaned up.
+ * Disabled entirely (no listener, renders null) only for reduced motion.
  */
 export function RippleEffect() {
   const { interactive } = usePointerCapabilities();

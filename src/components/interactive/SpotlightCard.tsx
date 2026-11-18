@@ -21,9 +21,10 @@ export interface SpotlightCardProps {
 }
 
 /**
- * Premium card with a cursor-following radial light, a 1px border highlight
+ * Premium card with a pointer-following radial light, a 1px border highlight
  * and a faint sheen. Pointer position is written to CSS vars only — no React
- * re-renders on move. Touch / reduced-motion users get a plain static card.
+ * re-renders on move. Tap/drag positions the light on touch and it resets on
+ * release. Only reduced-motion users get a plain static card.
  */
 export function SpotlightCard({
   children,
@@ -66,6 +67,26 @@ export function SpotlightCard({
     setHovered(false);
   }, [rawX, rawY]);
 
+  // A tap may not emit a pointermove before pointerup — position once on
+  // pointerdown, then always reset on release/cancel so nothing sticks.
+  const handleTouchDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType !== "touch") return;
+      handleMove(event);
+      setHovered(true);
+    },
+    [handleMove]
+  );
+  const handleTouchEnd = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType !== "touch") return;
+      rawX.set(0);
+      rawY.set(0);
+      setHovered(false);
+    },
+    [rawX, rawY]
+  );
+
   if (!interactive) {
     return <div className={cn(className)}>{children}</div>;
   }
@@ -89,6 +110,9 @@ export function SpotlightCard({
       ref={cardRef}
       className={cn("relative isolate", className)}
       onPointerMove={handleMove}
+      onPointerDown={handleTouchDown}
+      onPointerUp={handleTouchEnd}
+      onPointerCancel={handleTouchEnd}
       onPointerEnter={handleEnter}
       onPointerLeave={handleLeave}
       style={tiltStyle}

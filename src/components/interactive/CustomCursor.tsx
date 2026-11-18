@@ -11,11 +11,14 @@ const RING_SPRING = { stiffness: 260, damping: 26, mass: 0.5 } as const;
  * Gold dot + trailing ring cursor. The native cursor is deliberately kept
  * (no `cursor: none`) for usability/accessibility. The dot snaps to the
  * pointer via a raw motion value; the ring follows through a spring. Only
- * transform + opacity are animated. Touch / coarse pointers and reduced
- * motion users render nothing and register no listeners.
+ * transform + opacity are animated. Coarse pointers (touch) and reduced
+ * motion users render nothing and register no listeners — a fake cursor on a
+ * touch screen is useless.
  */
 export function CustomCursor() {
-  const { interactive } = usePointerCapabilities();
+  const { interactive, finePointer } = usePointerCapabilities();
+  // Motion allowed AND a real (fine) pointer — no fake cursor on touch screens.
+  const cursorEnabled = interactive && finePointer;
   const [visible, setVisible] = useState(false);
   const [hovered, setHovered] = useState(false);
   const visibleRef = useRef(false);
@@ -27,7 +30,7 @@ export function CustomCursor() {
   const ringY = useSpring(dotY, RING_SPRING);
 
   useEffect(() => {
-    if (!interactive) return;
+    if (!cursorEnabled) return;
 
     const onMove = (event: PointerEvent) => {
       dotX.set(event.clientX);
@@ -63,9 +66,9 @@ export function CustomCursor() {
       document.removeEventListener("pointerleave", onLeave);
       window.removeEventListener("blur", onLeave);
     };
-  }, [interactive, dotX, dotY]);
+  }, [cursorEnabled, dotX, dotY]);
 
-  if (!interactive) return null;
+  if (!cursorEnabled) return null;
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[9999]">

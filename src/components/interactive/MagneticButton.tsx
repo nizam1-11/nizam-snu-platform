@@ -24,9 +24,9 @@ const clamp = (value: number) =>
 
 /**
  * Wraps any control and pulls it toward the pointer on hover, springing back
- * on leave. Transform only (no layout shift), children keep their own hover
- * styles because they remain the actual pointer targets. Touch / coarse
- * pointers and reduced motion users get a plain, listener-free div.
+ * on leave. Touch taps nudge it too and spring back on release. Transform only
+ * (no layout shift), children keep their own hover styles because they remain
+ * the actual pointer targets. Only reduced motion gets a plain, listener-free div.
  */
 export function Magnetic({ children, className, strength = 0.25 }: MagneticProps) {
   const { interactive } = usePointerCapabilities();
@@ -53,6 +53,13 @@ export function Magnetic({ children, className, strength = 0.25 }: MagneticProps
     y.set(0);
   };
 
+  // Touch has no lingering hover — spring back as soon as the finger lifts.
+  const onPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "touch") return;
+    x.set(0);
+    y.set(0);
+  };
+
   const style: MotionStyle = { x: smoothX, y: smoothY, willChange: "transform" };
 
   return (
@@ -61,6 +68,8 @@ export function Magnetic({ children, className, strength = 0.25 }: MagneticProps
       style={style}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
     >
       {children}
     </motion.div>

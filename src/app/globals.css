@@ -421,28 +421,29 @@ body {
   background: var(--color-accent-blue);
 }
 
-/* ─── Reduced motion: refine global override ─── */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  /* Never leave reveal text hidden for reduced-motion users. */
-  [data-reveal-word] {
-    transform: none !important;
-    opacity: 1 !important;
-  }
-  .hero-ambient-glow {
-    animation: none !important;
-    opacity: 0.85;
-  }
-  .shine::after,
-  .skeleton-shimmer::after,
-  .noise-overlay {
-    display: none;
-  }
+/* ─── Motion opt-out: class-based global override ─── */
+/* Driven by the `motion-off` class on <html> (set by the inline script in
+   layout.tsx when the user opts out via the MotionToggle). Animations are ON
+   by default for everyone; this block only applies to explicit opt-outs. */
+html.motion-off *,
+html.motion-off *::before,
+html.motion-off *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+/* Never leave reveal text hidden for motion-opted-out users. */
+html.motion-off [data-reveal-word] {
+  transform: none !important;
+  opacity: 1 !important;
+}
+html.motion-off .hero-ambient-glow {
+  animation: none !important;
+  opacity: 0.85;
+}
+html.motion-off .shine::after,
+html.motion-off .skeleton-shimmer::after,
+html.motion-off .noise-overlay {
+  display: none;
 }

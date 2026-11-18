@@ -25,6 +25,38 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+/**
+ * GLOBAL MOTION OVERRIDE — runs synchronously during HTML parsing, BEFORE
+ * hydration. Animations are ON by default for every visitor regardless of the
+ * OS "reduce motion" setting; only a stored 'off' opts the user out.
+ *
+ * motion-dom calls matchMedia("(prefers-reduced-motion)") and local components
+ * call matchMedia("(prefers-reduced-motion: reduce)") — both go through
+ * window.matchMedia, so this single patch covers every consumer. The class on
+ * <html> drives the class-based override block in globals.css. Wrapped in
+ * try/catch so any failure leaves native behaviour intact.
+ */
+const motionOverrideScript = `(function(){try{
+  var off=localStorage.getItem('nizam-motion')==='off';
+  var orig=window.matchMedia.bind(window);
+  window.matchMedia=function(q){
+    var m=orig(q);
+    if(typeof q==='string'&&q.indexOf('prefers-reduced-motion')!==-1){
+      return new Proxy(m,{get:function(t,p){
+        if(p==='matches')return off;
+        var v=t[p];return typeof v==='function'?v.bind(t):v;
+      }});
+    }
+    return m;
+  };
+  document.documentElement.classList.toggle('motion-off',off);
+  window.__nizamSetMotion=function(on){
+    try{localStorage.setItem('nizam-motion',on?'on':'off')}catch(e){}
+    document.documentElement.classList.toggle('motion-off',!on);
+    location.reload();
+  };
+}catch(e){}})();`;
+
 export const metadata: Metadata = {
   title: {
     default: "Nizam — AI Automation Developer & Software Creator | SNU Automation",
@@ -71,8 +103,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: motionOverrideScript }} />
+      </head>
       <body className="min-h-screen bg-background text-text-primary antialiased">
         <PersonSchema
           name="Nizam"

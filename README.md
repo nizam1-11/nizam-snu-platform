@@ -42,6 +42,24 @@ npx drizzle-kit push
 npm run dev
 ```
 
+### Fresh clone / new machine setup
+
+The local SQLite database (`local.db`) is intentionally **not committed** — it is gitignored (`/local.db` and `/local.db-*`). On a fresh clone or a new machine the database file does not exist yet, so you must create the schema **before** starting the app. Running `npm run dev` without pushing the schema first will make the API routes fail and return **500** errors, because the database tables are missing.
+
+Run these commands in this order:
+
+```bash
+npm install
+npm run db:push
+npm run dev
+```
+
+- `npm install` — install dependencies.
+- `npm run db:push` — create `local.db` and push the Drizzle schema (required once, before the first run).
+- `npm run dev` — start the development server.
+
+`npm run db:seed` is **optional** and creates the default admin user for local development. The seeded admin account uses a default password that **MUST be changed** immediately before it is used anywhere beyond local development.
+
 ### Available Scripts
 
 - `npm run dev` — Start development server

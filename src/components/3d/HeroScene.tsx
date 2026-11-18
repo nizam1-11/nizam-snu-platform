@@ -13,19 +13,100 @@ import { motion } from "motion/react";
 import * as THREE from "three";
 
 /**
- * 3D materials need literal colors. Centralised here so the whole scene can be
- * re-tinted from one place; values mirror src/app/globals.css design tokens.
- * Warm gold + black only — no blue / purple / cyan / pink hues.
+ * 3D materials need literal colors. The palette is derived at runtime from the
+ * design tokens in src/app/globals.css so the scene follows theme edits.
+ * These literals are the fallback used when a token is missing or invalid.
  */
-const PALETTE = {
-  gold: "#D4AF37", // primary gold
-  brightGold: "#F5D67B", // bright gold highlight
-  bronze: "#8A6A1F", // deep gold / bronze
-  champagne: "#E8C66A", // champagne
-  amber: "#D9A94A", // amber
-  haze: "#B3A688", // warm dim ivory
-  deep: "#14120F", // warm near-black
-} as const;
+export type ScenePalette = {
+  gold: string;
+  brightGold: string;
+  bronze: string;
+  champagne: string;
+  amber: string;
+  haze: string;
+  deep: string;
+};
+
+const FALLBACK_PALETTE: ScenePalette = {
+  gold: "#D4AF37",
+  brightGold: "#F5D67B",
+  bronze: "#8A6A1F",
+  champagne: "#E8C66A",
+  amber: "#D9A94A",
+  haze: "#B3A688",
+  deep: "#14120F",
+};
+
+const HEX_RE = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+const RGB_RE =
+  /^rgba?\(\s*([\d.]+)\s*[, ]\s*([\d.]+)\s*[, ]\s*([\d.]+)\s*(?:[,/]\s*[\d.]+%?\s*)?\)$/i;
+const CHANNELS_RE = /^([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)$/;
+const VAR_RE = /var\(\s*(--[\w-]+)\s*\)/i;
+
+const byteToHex = (value: number) =>
+  Math.max(0, Math.min(255, Math.round(value)))
+    .toString(16)
+    .padStart(2, "0");
+
+/** Tiny parser for hex / rgb() / bare channels. Alpha is ignored. */
+function parseCssColor(raw: string | undefined, fallback: string): string {
+  if (!raw) return fallback;
+  const value = raw.trim();
+  if (!value) return fallback;
+
+  const hex = value.match(HEX_RE);
+  if (hex) {
+    let digits = hex[1];
+    digits =
+      digits.length <= 4
+        ? digits
+            .slice(0, 3)
+            .split("")
+            .map((char) => char + char)
+            .join("")
+        : digits.slice(0, 6);
+    return `#${digits.toUpperCase()}`;
+  }
+
+  const parts = value.match(RGB_RE) ?? value.match(CHANNELS_RE);
+  if (!parts) return fallback;
+
+  const channels = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
+  if (!channels.every(Number.isFinite)) return fallback;
+
+  return `#${channels.map(byteToHex).join("")}`.toUpperCase();
+}
+
+/**
+ * Reads the palette from computed custom properties on <html>. Also resolves
+ * the `rgb(var(--rgb-…) / a)` indirection used elsewhere in globals.css.
+ */
+function readScenePalette(): ScenePalette {
+  if (typeof document === "undefined") return FALLBACK_PALETTE;
+
+  const styles = getComputedStyle(document.documentElement);
+  const read = (token: string, fallback: string) => {
+    let value = styles.getPropertyValue(token).trim();
+    const nested = value.match(VAR_RE);
+    if (nested) {
+      const channels = styles.getPropertyValue(nested[1]).trim();
+      if (channels) value = value.replace(nested[0], channels);
+    }
+    return parseCssColor(value, fallback);
+  };
+
+  return {
+    gold: read("--color-accent-blue", FALLBACK_PALETTE.gold),
+    brightGold: read("--color-accent-electric", FALLBACK_PALETTE.brightGold),
+    // Exact bronze lives in --rgb-gold-deep (138 106 31); --color-accent-purple
+    // is a brighter gold, so reading it would shift the scene's look.
+    bronze: read("--rgb-gold-deep", FALLBACK_PALETTE.bronze),
+    champagne: read("--color-accent-cyan", FALLBACK_PALETTE.champagne),
+    amber: read("--color-accent-pink", FALLBACK_PALETTE.amber),
+    haze: read("--color-text-secondary", FALLBACK_PALETTE.haze),
+    deep: read("--color-surface-deep", FALLBACK_PALETTE.deep),
+  };
+}
 
 type FrameLoop = "always" | "demand" | "never";
 type Vec3 = [number, number, number];
@@ -119,7 +200,13 @@ function CinematicEntrance({
 }
 
 /** One-shot gold sparkle burst that expands and dissolves during entry. */
-function EntranceBurst({ animate }: { animate: boolean }) {
+function EntranceBurst({
+  animate,
+  palette,
+}: {
+  animate: boolean;
+  palette: ScenePalette;
+}) {
   const pointsRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.PointsMaterial>(null);
   const elapsed = useRef(0);
@@ -163,7 +250,7 @@ function EntranceBurst({ animate }: { animate: boolean }) {
       <pointsMaterial
         ref={materialRef}
         size={0.07}
-        color={PALETTE.brightGold}
+        color={palette.brightGold}
         transparent
         opacity={0}
         sizeAttenuation
@@ -263,7 +350,7 @@ function OrbitRing({
 }
 
 /** Slowly rotating faceted core plus its glow and orbital rings. */
-function Core({ animate }: { animate: boolean }) {
+function Core({ animate, palette }: { animate: boolean; palette: ScenePalette }) {
   const mesh = useRef<THREE.Mesh>(null);
 
   useFrame((_, delta) => {
@@ -274,14 +361,14 @@ function Core({ animate }: { animate: boolean }) {
 
   return (
     <group>
-      <Glow position={[0, 0, -1.5]} scale={7} color={PALETTE.gold} opacity={0.32} />
-      <Glow position={[0.6, 0.4, -2.1]} scale={5} color={PALETTE.bronze} opacity={0.24} />
+      <Glow position={[0, 0, -1.5]} scale={7} color={palette.gold} opacity={0.32} />
+      <Glow position={[0.6, 0.4, -2.1]} scale={5} color={palette.bronze} opacity={0.24} />
       <MaybeFloat animate={animate} speed={1.2} floatIntensity={0.6}>
         <mesh ref={mesh}>
           <icosahedronGeometry args={[1.15, 1]} />
           <MeshDistortMaterial
-            color={PALETTE.gold}
-            emissive={PALETTE.brightGold}
+            color={palette.gold}
+            emissive={palette.brightGold}
             emissiveIntensity={0.2}
             roughness={0.18}
             metalness={0.82}
@@ -294,14 +381,14 @@ function Core({ animate }: { animate: boolean }) {
         radius={2}
         tilt={[Math.PI / 2.7, 0.2, 0]}
         speed={0.08}
-        color={PALETTE.champagne}
+        color={palette.champagne}
         animate={animate}
       />
       <OrbitRing
         radius={2.5}
         tilt={[Math.PI / 2.1, -0.5, 0.4]}
         speed={-0.06}
-        color={PALETTE.gold}
+        color={palette.gold}
         animate={animate}
       />
       {/* Slow, thin gold ring — a quiet orbital accent. */}
@@ -309,7 +396,7 @@ function Core({ animate }: { animate: boolean }) {
         radius={3.05}
         tilt={[Math.PI / 3.4, 0.7, -0.3]}
         speed={0.035}
-        color={PALETTE.brightGold}
+        color={palette.brightGold}
         animate={animate}
         opacity={0.24}
         tube={0.004}
@@ -369,7 +456,13 @@ function Shard({
 }
 
 /** Restrained spherical halo — 120 additive points, one slow drift. */
-function ParticleField({ animate }: { animate: boolean }) {
+function ParticleField({
+  animate,
+  palette,
+}: {
+  animate: boolean;
+  palette: ScenePalette;
+}) {
   const ref = useRef<THREE.Points>(null);
 
   const positions = useMemo(() => {
@@ -404,7 +497,7 @@ function ParticleField({ animate }: { animate: boolean }) {
       </bufferGeometry>
       <pointsMaterial
         size={0.045}
-        color={PALETTE.gold}
+        color={palette.gold}
         transparent
         opacity={0.55}
         sizeAttenuation
@@ -449,6 +542,7 @@ function SceneRig({
 
 export function HeroScene() {
   const reduced = useReducedMotionPref();
+  const palette = useMemo(() => readScenePalette(), []);
   const pointer = useRef({ x: 0, y: 0 });
   const [touch, setTouch] = useState(false);
   const [hidden, setHidden] = useState(
@@ -514,15 +608,15 @@ export function HeroScene() {
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       >
         {/* Warm gold key + champagne rim — mirrors the brand gradient. */}
-        <ambientLight intensity={0.35} color={PALETTE.haze} />
-        <hemisphereLight args={[PALETTE.champagne, PALETTE.deep, 0.4]} />
-        <directionalLight position={[4, 3, 5]} intensity={2.1} color={PALETTE.gold} />
-        <directionalLight position={[-5, 2, -4]} intensity={1.3} color={PALETTE.champagne} />
+        <ambientLight intensity={0.35} color={palette.haze} />
+        <hemisphereLight args={[palette.champagne, palette.deep, 0.4]} />
+        <directionalLight position={[4, 3, 5]} intensity={2.1} color={palette.gold} />
+        <directionalLight position={[-5, 2, -4]} intensity={1.3} color={palette.champagne} />
         <pointLight
           position={[-2.5, -2, 4]}
           intensity={26}
           distance={22}
-          color={PALETTE.brightGold}
+          color={palette.brightGold}
         />
 
         <Stars
@@ -537,20 +631,20 @@ export function HeroScene() {
 
         <CinematicEntrance animate={motionOn}>
           <SceneRig pointer={pointer} parallax={parallaxOn}>
-            <Core animate={motionOn} />
-            <Shard position={[-3.1, 1.4, -0.5]} scale={0.55} color={PALETTE.champagne} animate={motionOn} />
-            <Shard position={[3.2, -1.1, -1]} scale={0.7} color={PALETTE.amber} animate={motionOn} speed={0.85} />
+            <Core animate={motionOn} palette={palette} />
+            <Shard position={[-3.1, 1.4, -0.5]} scale={0.55} color={palette.champagne} animate={motionOn} />
+            <Shard position={[3.2, -1.1, -1]} scale={0.7} color={palette.amber} animate={motionOn} speed={0.85} />
             <Shard
               position={[1.8, 2.3, -2]}
               scale={0.42}
-              color={PALETTE.brightGold}
+              color={palette.brightGold}
               animate={motionOn}
               wireframe
               speed={1.15}
             />
-            <Glow position={[-3, 1.4, -3]} scale={6} color={PALETTE.gold} opacity={0.16} />
-            <Glow position={[3, -1.2, -3]} scale={6} color={PALETTE.champagne} opacity={0.14} />
-            <ParticleField animate={motionOn} />
+            <Glow position={[-3, 1.4, -3]} scale={6} color={palette.gold} opacity={0.16} />
+            <Glow position={[3, -1.2, -3]} scale={6} color={palette.champagne} opacity={0.14} />
+            <ParticleField animate={motionOn} palette={palette} />
             {motionOn && (
               <Sparkles
                 count={26}
@@ -558,10 +652,10 @@ export function HeroScene() {
                 size={1.6}
                 speed={0.25}
                 opacity={0.5}
-                color={PALETTE.brightGold}
+                color={palette.brightGold}
               />
             )}
-            <EntranceBurst animate={motionOn} />
+            <EntranceBurst animate={motionOn} palette={palette} />
           </SceneRig>
         </CinematicEntrance>
       </Canvas>

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowRight, Box, Download, Layers, Sparkles } from "lucide-react";
 
 import { HeroSceneWrapper } from "@/components/3d/HeroSceneWrapper";
+import { PhotoDistortionWrapper } from "@/components/3d/PhotoDistortionWrapper";
 import { TextReveal } from "@/components/motion/TextReveal";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import {
@@ -131,14 +131,7 @@ export default function Home() {
                   <div className="relative rounded-[2rem] glass-strong gradient-border p-3 glow-blue">
                     <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-surface-deep">
                       <ImageReveal className="relative h-full w-full" direction="up">
-                        <Image
-                          src="/images/profile.jpg"
-                          alt="Nizam — AI Automation Developer & Software Creator"
-                          fill
-                          priority
-                          sizes="(max-width: 1024px) 0px, 300px"
-                          className="object-cover object-top"
-                        />
+                        <PhotoDistortionWrapper />
                       </ImageReveal>
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-bg-base/60 via-transparent to-transparent" />
                       <div className="pointer-events-none absolute inset-0 grid-overlay opacity-25" />

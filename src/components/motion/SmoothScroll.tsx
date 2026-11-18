@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Lenis from "lenis";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -20,6 +21,11 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       autoRaf: false, // we drive the loop explicitly below
     });
 
+    // Keep GSAP ScrollTrigger in sync with Lenis-driven scrolling (needed by
+    // the pinned horizontal project showcase and scroll-linked reveals).
+    const onLenisScroll = () => ScrollTrigger.update();
+    lenis.on("scroll", onLenisScroll);
+
     // Neutralize any native `scroll-behavior: smooth` while Lenis is active.
     const root = document.documentElement;
     root.classList.add("lenis-active");
@@ -33,6 +39,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelAnimationFrame(rafId);
+      lenis.off("scroll", onLenisScroll);
       root.classList.remove("lenis-active");
       lenis.destroy();
     };

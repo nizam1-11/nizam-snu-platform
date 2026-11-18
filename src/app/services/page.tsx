@@ -12,7 +12,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
+import { Reveal } from "@/components/motion/Reveal";
+import { StickyCardDeck } from "@/components/motion/StickyCardDeck";
 import { SpotlightCard, GradientOrb } from "@/components/interactive";
 import { cn } from "@/lib/utils";
 
@@ -171,69 +172,57 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Services Grid */}
+      {/* Services — sticky card deck (plain grid on small screens / reduced motion) */}
       <section className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="section-container">
-          {/*
-            Gentle lg-only sticky section marker instead of a full per-card
-            sticky deck. In this 2-column grid each card's containing block is
-            its own grid cell (and cards are h-full), so forcing position:sticky
-            on the cards would either not pin at all or overlap/cover card text.
-            A slim sticky label keeps the depth/pinning feel while every service
-            card stays fully readable; mobile/tablet remain the plain grid.
-          */}
-          <div className="pointer-events-none sticky top-24 z-20 mb-6 hidden justify-center motion-reduce:static lg:flex">
-            <span className="rounded-full glass bg-bg-base/90 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.25em] text-accent-electric backdrop-blur-md">
-              Services
-            </span>
-          </div>
-          <Stagger className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <StickyCardDeck>
             {services.map((service) => (
-              <StaggerItem key={service.slug} className="h-full">
-                <SpotlightCard className="relative h-full rounded-2xl">
-                  <div className="glass card-interactive relative h-full overflow-hidden rounded-2xl p-8">
-                    {/* Gradient top border */}
-                    <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-accent-blue/70 to-transparent" />
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-purple/60 to-transparent" />
+              <SpotlightCard
+                key={service.slug}
+                className="relative h-full rounded-2xl"
+              >
+                <div className="glass card-interactive relative h-full overflow-hidden rounded-2xl p-8">
+                  {/* Gradient top border */}
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-accent-blue/70 to-transparent" />
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-purple/60 to-transparent" />
 
-                    <div
-                      className={cn(
-                        "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ring-inset ring-white/15 glow-blue",
-                        service.color
-                      )}
-                    >
-                      <service.icon className="h-7 w-7 text-white" />
-                    </div>
-
-                    <h3 className="mb-3 font-heading text-xl font-bold text-text-primary">
-                      {service.title}
-                    </h3>
-                    <p className="mb-6 text-text-secondary">{service.description}</p>
-
-                    <ul className="mb-7 space-y-2.5">
-                      {service.benefits.map((benefit) => (
-                        <li
-                          key={benefit}
-                          className="flex items-center gap-2.5 text-sm text-text-secondary"
-                        >
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-blue glow-blue" />
-                          {benefit}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Link
-                      href={`/contact?service=${service.slug}`}
-                      className="group inline-flex items-center gap-2 text-sm font-medium text-accent-electric transition-colors hover:text-accent-blue"
-                    >
-                      Get in touch
-                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </Link>
+                  <div
+                    className={cn(
+                      "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ring-inset ring-white/15 glow-blue",
+                      service.color
+                    )}
+                  >
+                    <service.icon className="h-7 w-7 text-white" />
                   </div>
-                </SpotlightCard>
-              </StaggerItem>
+
+                  <h3 className="mb-3 font-heading text-xl font-bold text-text-primary">
+                    {service.title}
+                  </h3>
+                  <p className="mb-6 text-text-secondary">{service.description}</p>
+
+                  <ul className="mb-7 space-y-2.5">
+                    {service.benefits.map((benefit) => (
+                      <li
+                        key={benefit}
+                        className="flex items-center gap-2.5 text-sm text-text-secondary"
+                      >
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-blue glow-blue" />
+                        {benefit}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href={`/contact?service=${service.slug}`}
+                    className="group inline-flex items-center gap-2 text-sm font-medium text-accent-electric transition-colors hover:text-accent-blue"
+                  >
+                    Get in touch
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Link>
+                </div>
+              </SpotlightCard>
             ))}
-          </Stagger>
+          </StickyCardDeck>
         </div>
       </section>
 

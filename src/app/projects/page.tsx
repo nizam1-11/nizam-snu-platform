@@ -13,6 +13,7 @@ const GithubIcon = ({ className }: { className?: string }) => (
 );
 import { TiltCard } from "@/components/motion/TiltCard";
 import { Reveal } from "@/components/motion/Reveal";
+import { HorizontalShowcase } from "@/components/motion/HorizontalShowcase";
 import { GradientOrb } from "@/components/interactive";
 import { cn } from "@/lib/utils";
 
@@ -108,6 +109,19 @@ export default function ProjectsPage() {
           </Reveal>
         </div>
       </section>
+
+      {/* Horizontal Showcase — pinned on desktop, snap-scroll elsewhere */}
+      <HorizontalShowcase
+        items={projects.map((project) => ({
+          slug: project.slug,
+          title: project.title,
+          description: project.description,
+          category:
+            categories.find((c) => c.id === project.category)?.label ??
+            project.category,
+          techStack: project.techStack,
+        }))}
+      />
 
       {/* Category Filter */}
       <section className="px-4 pb-8 sm:px-6 lg:px-8">

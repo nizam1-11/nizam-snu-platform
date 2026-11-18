@@ -38,7 +38,7 @@ export default function Home() {
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-electric glow-electric" />
                   </span>
                   <span className="text-xs font-medium tracking-wide text-text-secondary sm:text-sm">
-                    AI Automation Developer &amp; Software Creator
+                    WELCOME TO SNU AUTOMATION · AI DEVELOPER
                   </span>
                 </div>
               </Reveal>
@@ -60,16 +60,17 @@ export default function Home() {
               `}</style>
               <TextReveal
                 as="h1"
-                text="I Build AI-Powered Applications & Automation"
+                text="I Build AI-Powered Tools & Smart Automation"
                 className="hero-headline mt-7 font-heading text-4xl font-bold leading-[1.08] tracking-tight text-text-primary sm:text-5xl lg:text-6xl"
               />
 
               <Reveal delay={0.15}>
                 <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-text-secondary sm:text-lg lg:mx-0">
-                  Welcome to my digital platform. I create AI applications,
-                  business automation systems, workflow solutions, and software
-                  products. Explore my work, download my software, and
-                  let&apos;s build something great together.
+                  I&apos;m Syed Nizam Uddin, an independent developer building
+                  AI applications, automation systems, and digital products
+                  that turn complex tasks into simpler, smarter experiences.
+                  Explore the tools I&apos;ve built, browse my projects, or
+                  download something useful — there&apos;s more on the way.
                 </p>
               </Reveal>
 
@@ -77,22 +78,51 @@ export default function Home() {
                 <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
                   <Magnetic>
                     <Link
-                      href="/products"
+                      href="/projects"
                       className="shine group inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-accent-blue to-accent-purple px-8 py-4 text-base font-semibold text-white shadow-lg shadow-accent-blue/25 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-accent-blue/40"
                     >
-                      Explore Products
+                      Explore My Work
                       <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                     </Link>
                   </Magnetic>
                   <Magnetic>
                     <Link
-                      href="/download"
+                      href="/products"
                       className="inline-flex items-center gap-2.5 rounded-xl glass px-8 py-4 text-base font-semibold text-text-primary transition-colors duration-300 hover:bg-surface-light hover:glow-electric"
                     >
                       <Download className="h-5 w-5" />
-                      Download Center
+                      Discover My Software
                     </Link>
                   </Magnetic>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.3}>
+                <div className="mt-6 flex flex-col items-center gap-3 lg:items-start">
+                  <p className="text-sm text-text-muted">
+                    Have an idea worth building?{" "}
+                    <Link
+                      href="/contact"
+                      className="font-medium text-accent-electric transition-colors duration-300 hover:text-accent-blue"
+                    >
+                      Let&apos;s make it real.
+                    </Link>
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                    {[
+                      "AI Applications",
+                      "Business Automation",
+                      "Software Products",
+                      "Digital Innovation",
+                    ].map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full glass px-3 py-1 text-[10px] font-medium tracking-wide text-text-muted sm:text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </Reveal>
 

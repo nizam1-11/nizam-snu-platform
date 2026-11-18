@@ -7,7 +7,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "motion/react";
 import { cn } from "@/lib/utils";
 
 export interface StickyCardDeckProps {
@@ -19,6 +24,9 @@ export interface StickyCardDeckProps {
 /** Sticky pin offset from the top of the viewport (px), plus a small per-card step. */
 const TOP_BASE = 96;
 const TOP_STEP = 10;
+
+/** Cinematic ease-out-expo — matches the entrance used by Reveal/Stagger. */
+const ENTRANCE_EASE = [0.19, 1, 0.22, 1] as const;
 
 /**
  * Hydration-safe capability gate. Server and first client render are identical
@@ -44,6 +52,44 @@ function useStickyDeckEnabled() {
   }, []);
 
   return enabled;
+}
+
+interface FallbackCardProps {
+  children: ReactNode;
+  index: number;
+  animate: boolean;
+}
+
+/**
+ * Card wrapper for the non-sticky fallback grid.
+ *
+ * Server + first client render (and reduced motion) return a plain, style-free
+ * <div> so SSR/first-client output is byte-identical. Once mounted with motion
+ * allowed we swap to a FRESH motion.div node — a new node reads `initial` on
+ * mount, so whileInView produces a real staggered fade + slide-up. (Merely
+ * flipping `initial` from false to an object on an existing node does nothing:
+ * Motion caches its visual state at first render.)
+ */
+function FallbackCard({ children, index, animate }: FallbackCardProps) {
+  if (!animate) {
+    return <div className="h-full">{children}</div>;
+  }
+
+  return (
+    <motion.div
+      className="h-full"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{
+        duration: 0.5,
+        delay: Math.min(index * 0.08, 0.4),
+        ease: ENTRANCE_EASE,
+      }}
+    >
+      {children}
+    </motion.div>
+  );
 }
 
 interface StickyCardProps {
@@ -94,23 +140,33 @@ function StickyCard({ children, index }: StickyCardProps) {
  *   incremental top offset with an increasing z-index so later cards layer on
  *   top of earlier ones (a 10px sliver of each earlier card remains visible).
  * - <lg OR prefers-reduced-motion: plain responsive grid (1 col / 2 col at md),
- *   no pinning, no scroll listeners, no transforms.
+ *   no pinning, no scroll listeners. Cards get a light staggered fade + slide-up
+ *   entrance as they scroll into view (motion allowed only). Reduced-motion
+ *   users get completely static cards with no inline transform/opacity.
  *
  * The deck wrapper itself is a plain, transform-free element: ancestor
- * transforms break position:sticky, so this component deliberately avoids
- * wrapping the deck in Reveal/Stagger/motion.div.
+ * transforms break position:sticky, so the entrance wrapper is applied ONLY to
+ * the fallback grid — never to the desktop sticky cards.
  */
 export function StickyCardDeck({ children, className }: StickyCardDeckProps) {
   const enabled = useStickyDeckEnabled();
+  const reduce = useReducedMotion();
+  // Hydration-safe entrance gate. `useReducedMotion()` is null during SSR but
+  // resolves on the client, so gating the DOM shape on it during render would
+  // mismatch. Server and first client render are identical (plain divs); only
+  // after mount do motion-allowed users get the entrance wrapper.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const animateFallback = mounted && !reduce;
   const items = Children.toArray(children);
 
   if (!enabled) {
     return (
       <div className={cn("grid grid-cols-1 gap-6 md:grid-cols-2", className)}>
         {items.map((child, index) => (
-          <div key={index} className="h-full">
+          <FallbackCard key={index} index={index} animate={animateFallback}>
             {child}
-          </div>
+          </FallbackCard>
         ))}
       </div>
     );

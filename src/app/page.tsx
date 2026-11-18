@@ -113,8 +113,11 @@ export default function Home() {
               </Stagger>
             </div>
 
-            {/* ── Right: premium profile card ── */}
-            <div className="relative hidden lg:block">
+            {/* ── Right: premium profile card ──
+                Visible at every width now. On <lg the grid stacks this below the
+                copy and it renders as a compact portrait; at lg+ the original
+                sizing/positioning is unchanged (lg:mt-0 + lg:max-w-sm). */}
+            <div className="relative mt-4 lg:mt-0">
               <GradientOrb
                 color="purple"
                 size={420}
@@ -124,7 +127,7 @@ export default function Home() {
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
               />
               <Reveal direction="left" delay={0.1}>
-                <div className="relative mx-auto w-full max-w-sm">
+                <div className="relative mx-auto w-full max-w-[220px] sm:max-w-[280px] lg:max-w-sm">
                   {/* Concentric glow rings */}
                   <div className="absolute -inset-8 rounded-[3rem] border border-accent-blue/10" />
                   <div className="absolute -inset-4 rounded-[2.75rem] border border-accent-purple/20" />

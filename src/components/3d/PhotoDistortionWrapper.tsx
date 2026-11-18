@@ -15,7 +15,7 @@ function PlainProfileImage() {
       alt="Nizam — AI Automation Developer & Software Creator"
       fill
       priority
-      sizes="(max-width: 1024px) 0px, 300px"
+      sizes="(max-width: 639px) 220px, (max-width: 1023px) 280px, 300px"
       className="object-cover object-top"
     />
   );

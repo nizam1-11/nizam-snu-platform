@@ -1,29 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDbAsync } from "@/lib/db";
+import { releaseAssets } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
-// Placeholder: In production, this will look up the asset from D1 database
-// and redirect to the actual download URL (GitHub Releases or R2)
-// It also increments the download counter
-
+// GET /api/download/[assetId] — public lookup + 302 redirect to the asset URL
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ assetId: string }> }
 ) {
-  const { assetId } = await params;
+  try {
+    const { assetId } = await params;
 
-  // TODO: Look up asset from D1 database by ID
-  // TODO: Increment download_count
-  // TODO: Return 302 redirect to actual download URL
+    const db = await getDbAsync();
+    if (!db) {
+      return NextResponse.json(
+        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
 
-  // Placeholder: redirect to a sample URL
-  // In production, this would be the GitHub Releases or R2 URL
+    const rows = await db
+      .select()
+      .from(releaseAssets)
+      .where(eq(releaseAssets.id, assetId))
+      .limit(1);
+    const asset = rows[0];
 
-  // For now, return a JSON response with the asset info
-  return NextResponse.json(
-    {
-      assetId,
-      message: "Download endpoint. In production, this will redirect to the file URL.",
-      // downloadUrl: "https://github.com/...",
-    },
-    { status: 200 }
-  );
+    if (!asset || asset.isAvailable === false) {
+      return NextResponse.json(
+        { error: "Asset not found", code: "NOT_FOUND" },
+        { status: 404 }
+      );
+    }
+
+    // Increment the real download counter (best-effort; never block the download).
+    try {
+      await db
+        .update(releaseAssets)
+        .set({ downloadCount: (asset.downloadCount || 0) + 1 })
+        .where(eq(releaseAssets.id, assetId));
+    } catch (counterError) {
+      console.error("Download counter update failed:", counterError);
+    }
+
+    // Works for absolute URLs (GitHub/R2) and for relative /api/files/... paths.
+    return NextResponse.redirect(new URL(asset.downloadUrl, request.url), 302);
+  } catch (error) {
+    console.error("Download lookup error:", error);
+    return NextResponse.json(
+      { error: "Internal server error", code: "INTERNAL_ERROR" },
+      { status: 500 }
+    );
+  }
 }

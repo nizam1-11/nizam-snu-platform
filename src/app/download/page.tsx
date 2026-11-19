@@ -53,97 +53,78 @@ const platformIcons: Record<string, any> = {
   web: Globe,
 };
 
-// Placeholder data (will be loaded from DB)
-const productsWithReleases = [
-  {
-    id: "1",
-    slug: "ai-task-automator",
-    name: "AI Task Automator",
-    tagline: "Automate repetitive tasks with natural language",
-    licenseType: "freemium",
-    latestVersion: "1.2.0",
-    releases: [
-      {
-        id: "r1",
-        version: "1.2.0",
-        releaseDate: "2026-11-10",
-        status: "stable",
-        isLatest: true,
-        assets: [
-          {
-            id: "a1",
-            platform: "windows",
-            architecture: "x64",
-            fileType: "exe",
-            fileSize: 45200000,
-            sha256: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
-            minOsVersion: "Windows 10",
-            downloadCount: 892,
-          },
-          {
-            id: "a2",
-            platform: "windows",
-            architecture: "arm64",
-            fileType: "exe",
-            fileSize: 43100000,
-            sha256: "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
-            minOsVersion: "Windows 11",
-            downloadCount: 234,
-          },
-          {
-            id: "a3",
-            platform: "linux",
-            architecture: "x64",
-            fileType: "AppImage",
-            fileSize: 52300000,
-            sha256: "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
-            minOsVersion: "Ubuntu 20.04+",
-            downloadCount: 567,
-          },
-        ],
-      },
-      {
-        id: "r2",
-        version: "1.1.0",
-        releaseDate: "2026-10-15",
-        status: "stable",
-        isLatest: false,
-        releaseNotes: "Bug fixes and performance improvements.",
-        assets: [],
-      },
-    ],
-  },
-  {
-    id: "2",
-    slug: "workflow-builder",
-    name: "Workflow Builder",
-    tagline: "Visual drag-and-drop workflow automation",
-    licenseType: "free",
-    latestVersion: "2.0.1",
-    releases: [
-      {
-        id: "r3",
-        version: "2.0.1",
-        releaseDate: "2026-11-08",
-        status: "stable",
-        isLatest: true,
-        releaseNotes: "Major update with new workflow templates and improved UI.",
-        assets: [
-          {
-            id: "a4",
-            platform: "web",
-            architecture: "universal",
-            fileType: "web",
-            fileSize: 0,
-            sha256: null,
-            minOsVersion: null,
-            downloadCount: 3421,
-          },
-        ],
-      },
-    ],
-  },
-];
+// Public download data is loaded from the API at runtime — no fabricated values here.
+type DownloadAsset = {
+  id: string;
+  platform: string | null;
+  architecture: string | null;
+  fileType: string | null;
+  fileSize: number;
+  sha256: string | null;
+  minOsVersion: string | null;
+  downloadCount: number;
+};
+type DownloadRelease = {
+  id: string;
+  version: string;
+  releaseDate: string;
+  status: string;
+  isLatest: boolean;
+  releaseNotes: string;
+  assets: DownloadAsset[];
+};
+type DownloadProduct = {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  licenseType: string;
+  latestVersion: string;
+  releases: DownloadRelease[];
+};
+
+const fallbackProducts: DownloadProduct[] = [];
+
+/** Map the public API payload into the exact shape the existing JSX expects. */
+function mapApiProduct(api: any): DownloadProduct {
+  const releases: DownloadRelease[] = (Array.isArray(api.releases) ? api.releases : []).map(
+    (release: any) => ({
+      id: release.id,
+      version: release.version ?? "",
+      releaseDate:
+        typeof release.releaseDate === "string"
+          ? release.releaseDate.slice(0, 10)
+          : release.releaseDate ?? "",
+      status: release.status ?? "stable",
+      isLatest: Boolean(release.isLatest),
+      releaseNotes: release.releaseNotes ?? "",
+      assets: (Array.isArray(release.assets) ? release.assets : [])
+        .filter((asset: any) => asset.isAvailable !== false)
+        .map((asset: any) => ({
+          id: asset.id,
+          platform: asset.platform,
+          architecture: asset.architecture,
+          fileType: asset.fileType,
+          fileSize: Number(asset.fileSize) || 0,
+          sha256: asset.sha256,
+          minOsVersion: asset.minOsVersion,
+          downloadCount: Number(asset.downloadCount) || 0,
+        })),
+    })
+  );
+
+  const latest = releases.find((r) => r.isLatest) || releases[0];
+
+  return {
+    id: api.id,
+    slug: api.slug ?? "snu-automation",
+    name: api.name ?? "",
+    tagline: api.tagline ?? "",
+    licenseType: api.licenseType ?? "",
+    latestVersion: latest?.version ?? "",
+    releases,
+  };
+}
 
 /** Status-driven download control — the real href navigation is never blocked. */
 function DownloadButton({ assetId }: { assetId: string }) {
@@ -221,8 +202,34 @@ export default function DownloadCenterPage() {
   const [platformFilter, setPlatformFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const [products, setProducts] = useState<DownloadProduct[]>(() => fallbackProducts);
 
-  const filteredProducts = productsWithReleases.filter((product) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/products/snu-automation", {
+          cache: "no-store",
+        });
+        if (!res.ok) return; // API error — keep the empty fallback.
+        const data = await res.json();
+        if (cancelled || !data?.product) return;
+        const mapped = mapApiProduct(data.product);
+        // Only render products that actually have releases; otherwise the
+        // existing empty-state markup below does the talking.
+        setProducts(mapped.releases.length > 0 ? [mapped] : []);
+      } catch {
+        // Network error — keep the empty fallback (no fabricated data).
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.tagline.toLowerCase().includes(searchQuery.toLowerCase());
@@ -268,15 +275,14 @@ export default function DownloadCenterPage() {
             <Reveal>
               <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium tracking-wide text-accent-electric backdrop-blur">
                 <Download className="h-3.5 w-3.5" />
-                VERIFIED DISTRIBUTION
+                DOWNLOAD CENTER
               </div>
               <h1 className="mb-6 text-4xl font-heading font-bold tracking-tight sm:text-5xl">
                 Download <span className="text-gradient-primary">Center</span>
               </h1>
               <p className="mx-auto max-w-2xl text-lg leading-relaxed text-text-secondary">
-                Download the latest versions of all software products. Every release
-                includes version info, release notes, and SHA-256 checksums for
-                verification.
+                Download the latest releases of SNU Automation. Each release includes
+                its version, release notes, and download details where available.
               </p>
             </Reveal>
           </div>
@@ -349,7 +355,9 @@ export default function DownloadCenterPage() {
           <div className="section-container">
             <Stagger className="space-y-6">
               {filteredProducts.map((product) => {
-                const latestRelease = product.releases.find((r) => r.isLatest);
+                const latestRelease =
+                  product.releases.find((r) => r.isLatest) ||
+                  product.releases[0];
                 const isExpanded = expandedProduct === product.id;
 
                 return (
@@ -386,17 +394,21 @@ export default function DownloadCenterPage() {
                         </div>
 
                         <div className="flex shrink-0 items-center gap-3">
-                          <span
-                            className={cn(
-                              "hidden rounded-full px-2.5 py-1 text-xs font-medium capitalize sm:inline-block",
-                              licenseColors[product.licenseType]
-                            )}
-                          >
-                            {product.licenseType}
-                          </span>
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-xs text-text-secondary">
-                            v{product.latestVersion}
-                          </span>
+                          {product.licenseType && (
+                            <span
+                              className={cn(
+                                "hidden rounded-full px-2.5 py-1 text-xs font-medium capitalize sm:inline-block",
+                                licenseColors[product.licenseType]
+                              )}
+                            >
+                              {product.licenseType}
+                            </span>
+                          )}
+                          {product.latestVersion && (
+                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-xs text-text-secondary">
+                              v{product.latestVersion}
+                            </span>
+                          )}
                           <motion.span
                             animate={{ rotate: isExpanded ? 180 : 0 }}
                             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
@@ -451,7 +463,7 @@ export default function DownloadCenterPage() {
                                   )
                                   .map((asset) => {
                                     const Icon =
-                                      platformIcons[asset.platform] || Monitor;
+                                      platformIcons[asset.platform ?? "unknown"] || Monitor;
                                     return (
                                       <div
                                         key={asset.id}
@@ -463,7 +475,7 @@ export default function DownloadCenterPage() {
                                           </span>
                                           <div>
                                             <div className="text-sm font-medium text-text-primary">
-                                              {platformNames[asset.platform]}{" "}
+                                              {platformNames[asset.platform ?? "unknown"]}{" "}
                                               {asset.architecture &&
                                                 `(${asset.architecture})`}
                                             </div>
@@ -517,7 +529,7 @@ export default function DownloadCenterPage() {
                                       .map((asset) => (
                                         <div key={asset.id} className="space-y-1.5">
                                           <div className="text-xs font-medium text-text-secondary">
-                                            {platformNames[asset.platform]} (
+                                            {platformNames[asset.platform ?? "unknown"]} (
                                             {asset.architecture})
                                           </div>
                                           <code className="block break-all rounded-lg border border-white/5 bg-surface-deep/80 p-3 font-mono text-xs leading-relaxed text-accent-electric">
@@ -608,15 +620,15 @@ export default function DownloadCenterPage() {
                       Download Safety
                     </h3>
                     <p className="mb-5 text-sm leading-relaxed text-text-secondary">
-                      All downloads are verified and include SHA-256 checksums. We
-                      recommend verifying your download before installation.
+                      Download installers only from this official page. Where a
+                      checksum or release note is provided, it is shown with the release.
                     </p>
                     <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                       {[
-                        "SHA-256 checksums on every file",
-                        "Virus-scanned binaries",
+                        "Official download links",
+                        "Release notes where provided",
                         "Version history preserved",
-                        "No bundled adware or spyware",
+                        "Checksums shown when available",
                       ].map((item) => (
                         <div
                           key={item}

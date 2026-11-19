@@ -557,7 +557,7 @@ export default function ProductDetailPage({
                     return (
                       <motion.a
                         key={asset.id || asset.platform + asset.architecture}
-                        href={asset.downloadUrl}
+                        href={asset.id ? `/api/download/${asset.id}` : "/download"}
                         whileHover={{ x: 4 }}
                         transition={{ type: "spring", stiffness: 380, damping: 26 }}
                         className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-colors hover:border-accent-blue/40 hover:bg-accent-blue/[0.06] hover:glow-blue"

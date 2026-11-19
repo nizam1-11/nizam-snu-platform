@@ -17,7 +17,22 @@ const EXT_BY_MIME: Record<string, string> = {
   "image/avif": "avif",
 };
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_INSTALLER_SIZE = 500 * 1024 * 1024; // 500MB
+
+// Installer MIME types, plus a set of "generic" types that fall back to the
+// original filename's extension. Extensions are derived from the filename for
+// installers ONLY and are strictly whitelisted.
+const ALLOWED_INSTALLER_MIMES = new Set([
+  "application/octet-stream",
+  "application/x-msdownload",
+  "application/vnd.microsoft.portable-executable",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/x-msi",
+]);
+const GENERIC_INSTALLER_MIMES = new Set(["", "application/octet-stream"]);
+const ALLOWED_INSTALLER_EXTS = new Set(["exe", "msi", "zip"]);
 
 /**
  * Resolve the R2 bucket binding for the current runtime.
@@ -35,13 +50,29 @@ async function getStorageBucket(): Promise<any | undefined> {
   return (process.env as any).STORAGE;
 }
 
-// POST /api/admin/upload — Upload an image to R2 (admin only)
+// POST /api/admin/upload — Upload an image or installer to R2 (admin only)
 export async function POST(request: NextRequest) {
   const guard = await requireAdmin(request);
   if (guard) return guard;
 
   try {
     const formData = await request.formData();
+
+    // Optional destination folder: "blog" (default, image) or "installers".
+    const rawFolder = formData.get("folder");
+    let folder: "blog" | "installers";
+    if (rawFolder === null || rawFolder === "") {
+      folder = "blog";
+    } else if (rawFolder === "blog" || rawFolder === "installers") {
+      folder = rawFolder;
+    } else {
+      return NextResponse.json(
+        { error: "Invalid folder", code: "INVALID_FOLDER" },
+        { status: 400 }
+      );
+    }
+    const isInstaller = folder === "installers";
+
     const raw = formData.get("file");
 
     // A string means the field was not a File; null means it was absent.
@@ -53,15 +84,38 @@ export async function POST(request: NextRequest) {
     }
 
     const file = raw as File;
+    let ext: string;
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
-      return NextResponse.json(
-        { error: "File type not allowed", code: "INVALID_FILE_TYPE" },
-        { status: 400 }
-      );
+    if (isInstaller) {
+      // Derive the extension from the ORIGINAL filename only for installers:
+      // take the last extension, lowercase it, and strictly whitelist it.
+      const name = file.name || "";
+      const dot = name.lastIndexOf(".");
+      const nameExt = dot >= 0 ? name.slice(dot + 1).toLowerCase() : "";
+      const mime = file.type || "";
+      const mimeOk =
+        ALLOWED_INSTALLER_MIMES.has(mime) || GENERIC_INSTALLER_MIMES.has(mime);
+
+      if (!mimeOk || !ALLOWED_INSTALLER_EXTS.has(nameExt)) {
+        return NextResponse.json(
+          { error: "File type not allowed", code: "INVALID_FILE_TYPE" },
+          { status: 400 }
+        );
+      }
+      ext = nameExt;
+    } else {
+      if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
+        return NextResponse.json(
+          { error: "File type not allowed", code: "INVALID_FILE_TYPE" },
+          { status: 400 }
+        );
+      }
+      // Never trust the user-supplied filename for images — derive from MIME.
+      ext = EXT_BY_MIME[file.type];
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    const maxSize = isInstaller ? MAX_INSTALLER_SIZE : MAX_IMAGE_SIZE;
+    if (file.size > maxSize) {
       return NextResponse.json(
         { error: "File too large", code: "FILE_TOO_LARGE" },
         { status: 400 }
@@ -75,9 +129,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Never trust the user-supplied filename — derive the key from MIME + UUID.
-    const ext = EXT_BY_MIME[file.type];
-    const key = `blog/${crypto.randomUUID()}.${ext}`;
+    const key = `${folder}/${crypto.randomUUID()}.${ext}`;
 
     const bucket = await getStorageBucket();
     if (!bucket) {
@@ -93,7 +145,13 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { url: "/api/images/" + key, key },
+      {
+        url: (isInstaller ? "/api/files/" : "/api/images/") + key,
+        key,
+        size: file.size,
+        mime: file.type,
+        folder,
+      },
       { status: 201 }
     );
   } catch (error) {

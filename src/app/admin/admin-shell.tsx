@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Mail,
   Settings,
+  Download,
   LogOut,
   Menu,
   X,
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 const adminNav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/releases", label: "Releases", icon: Download },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/blog", label: "Blog", icon: FileText },
   { href: "/admin/faq", label: "FAQ", icon: HelpCircle },

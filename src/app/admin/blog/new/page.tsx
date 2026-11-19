@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Loader2,
   ImageIcon,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,11 @@ export default function NewBlogPostPage() {
     coverImageUrl: "",
   });
   const [coverImageError, setCoverImageError] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -44,6 +50,81 @@ export default function NewBlogPostPage() {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "");
     setFormData({ ...formData, slug });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
+
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadError("");
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/avif",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Use a JPG, PNG, WebP, GIF or AVIF image.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("Image must be 10 MB or smaller.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = previewUrl;
+    setLocalPreview(previewUrl);
+    setCoverImageError(false);
+
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        credentials: "same-origin",
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setFormData((prev) => ({ ...prev, coverImageUrl: data.url }));
+        setUploadError("");
+      } else {
+        const codeMessages: Record<string, string> = {
+          NO_FILE: "Please choose an image and try again.",
+          INVALID_FILE_TYPE: "Use a JPG, PNG, WebP, GIF or AVIF image.",
+          FILE_TOO_LARGE: "Image must be 10 MB or smaller.",
+          UNAUTHORIZED: "Your session has expired. Please sign in again.",
+          STORAGE_UNAVAILABLE: "Storage isn't available right now.",
+          INTERNAL_ERROR: "Upload failed. Please try again.",
+        };
+        setUploadError(
+          (data.code && codeMessages[data.code]) ||
+            data.error ||
+            "Upload failed. Please try again."
+        );
+      }
+    } catch {
+      setUploadError("Upload failed. Check your connection and try again.");
+    } finally {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+      setLocalPreview(null);
+      setUploading(false);
+    }
   };
 
   const handleSave = async (publish: boolean) => {
@@ -79,6 +160,8 @@ export default function NewBlogPostPage() {
       setSaving(false);
     }
   };
+
+  const previewSrc = localPreview || formData.coverImageUrl;
 
   return (
     <div>
@@ -216,7 +299,42 @@ export default function NewBlogPostPage() {
               <p className="text-xs text-text-muted mt-2">
                 Paste a direct image link. Leave empty to use the default gradient cover.
               </p>
-              {formData.coverImageUrl ? (
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  aria-label="Upload cover image"
+                />
+                <motion.button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-text-primary glass rounded-xl hover:bg-surface-elevated transition-colors disabled:opacity-60"
+                >
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {uploading ? "Uploading…" : "Upload Image"}
+                </motion.button>
+                <span className="text-xs text-text-muted">
+                  or upload a JPG, PNG, WebP, GIF or AVIF up to 10 MB
+                </span>
+              </div>
+              {uploadError && (
+                <p className="mt-2 flex items-center gap-2 text-xs text-error" role="alert">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {uploadError}
+                </p>
+              )}
+
+              {previewSrc ? (
                 coverImageError ? (
                   <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-xs text-text-muted" role="status">
                     <AlertCircle className="w-4 h-4 shrink-0" />
@@ -226,7 +344,7 @@ export default function NewBlogPostPage() {
                   <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={formData.coverImageUrl}
+                      src={previewSrc}
                       alt="Cover image preview"
                       className="block h-32 w-full object-cover"
                       onError={() => setCoverImageError(true)}

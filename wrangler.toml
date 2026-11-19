@@ -16,10 +16,10 @@ database_name = "nizam-snu-db"
 database_id = "1a45ea55-72bc-4a49-a12b-48f04d389384"
 migrations_dir = "drizzle/migrations"
 
-# R2 Storage (enable in dashboard first, then uncomment)
-# [[r2_buckets]]
-# binding = "STORAGE"
-# bucket_name = "nizam-snu-storage"
+# R2 Storage
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "nizam-snu-storage"
 
 # Environment variables (set as Workers secrets after deploy)
 # BETTER_AUTH_SECRET

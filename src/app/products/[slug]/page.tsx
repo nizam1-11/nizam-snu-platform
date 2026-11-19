@@ -315,13 +315,121 @@ function ChecksumBlock({ value }: { value: string }) {
   );
 }
 
+/** Defensively parse a JSON string field coming from D1 (may arrive pre-parsed). */
+function parseJson(value: any, fallback: any) {
+  if (Array.isArray(value) || (value && typeof value === "object")) return value;
+  if (typeof value !== "string") return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function mapApiRelease(release: any) {
+  return {
+    id: release.id,
+    version: release.version,
+    releaseDate:
+      typeof release.releaseDate === "string"
+        ? release.releaseDate.slice(0, 10)
+        : release.releaseDate,
+    status: release.status,
+    releaseNotes: release.releaseNotes,
+    changelog: release.changelog,
+    assets: (Array.isArray(release.assets) ? release.assets : []).map((asset: any) => ({
+      id: asset.id,
+      platform: asset.platform,
+      architecture: asset.architecture,
+      fileType: asset.fileType,
+      fileSize: Number(asset.fileSize) || 0,
+      downloadUrl: asset.downloadUrl,
+      sha256: asset.sha256,
+      minOsVersion: asset.minOsVersion,
+    })),
+  };
+}
+
+/** Map the public API payload into the exact shape the existing JSX expects. */
+function mapApiProduct(api: any, fallback: any) {
+  const mapped = (Array.isArray(api.releases) ? api.releases : []).map(mapApiRelease);
+  // Guarantee at least one release so the existing `product.releases[0]` reads stay safe.
+  const releases =
+    mapped.length > 0
+      ? mapped
+      : fallback?.releases?.length
+      ? fallback.releases
+      : [
+          {
+            id: "none",
+            version: fallback?.latestVersion ?? "",
+            releaseDate: fallback?.latestReleaseDate ?? "",
+            status: "stable",
+            releaseNotes: "",
+            changelog: "",
+            assets: [],
+          },
+        ];
+  const latest = releases[0];
+  const features = parseJson(api.features, []);
+  const platforms = parseJson(api.supportedPlatforms, []);
+  const requirements = parseJson(api.systemRequirements, {});
+
+  return {
+    name: api.name ?? fallback?.name,
+    tagline: api.tagline ?? fallback?.tagline,
+    description: api.description ?? fallback?.description,
+    longDescription: api.longDescription ?? fallback?.longDescription,
+    category: api.category ?? fallback?.category,
+    licenseType: api.licenseType ?? fallback?.licenseType,
+    features: Array.isArray(features) ? features : [],
+    systemRequirements:
+      requirements && typeof requirements === "object" && !Array.isArray(requirements)
+        ? requirements
+        : {},
+    supportedPlatforms: Array.isArray(platforms) ? platforms : [],
+    installationGuide: api.installationGuide ?? fallback?.installationGuide,
+    documentationUrl: api.documentationUrl ?? fallback?.documentationUrl,
+    supportInfo: api.supportInfo ?? fallback?.supportInfo,
+    screenshots: Array.isArray(api.screenshots) ? api.screenshots : [],
+    releases,
+    latestVersion: latest?.version ?? fallback?.latestVersion,
+    latestReleaseDate: latest?.releaseDate ?? fallback?.latestReleaseDate,
+  };
+}
+
 export default function ProductDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const product = productData[slug];
+  const [product, setProduct] = useState<any>(() => productData[slug] ?? null);
+
+  useEffect(() => {
+    // Reset to this slug's hardcoded fallback on mount/navigation (no-op on mount).
+    setProduct(productData[slug] ?? null);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(slug)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return; // 404 / server error — keep hardcoded fallback.
+        const data = await res.json();
+        if (!cancelled && data?.product) {
+          setProduct(mapApiProduct(data.product, productData[slug]));
+        }
+      } catch {
+        // Network error — keep hardcoded fallback.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   if (!product) {
     return (

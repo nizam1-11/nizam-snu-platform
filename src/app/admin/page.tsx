@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const stats = [
+const STATS_FALLBACK = [
   { label: "Products", value: "0", icon: Package, color: "from-accent-blue to-accent-electric" },
   { label: "Projects", value: "0", icon: FolderKanban, color: "from-accent-purple to-accent-pink" },
   { label: "Blog Posts", value: "0", icon: FileText, color: "from-accent-cyan to-accent-blue" },
@@ -36,7 +37,7 @@ const quickActions = [
   { label: "Add FAQ", href: "/admin/faq/new", icon: HelpCircle },
 ];
 
-const recentActivity = [
+const RECENT_ACTIVITY_FALLBACK = [
   { action: "System initialized", time: "Just now", type: "system" },
 ];
 
@@ -47,10 +48,127 @@ const quickLinks = [
   { label: "Cloudflare Dashboard", href: "https://dash.cloudflare.com", icon: Settings },
 ];
 
+async function fetchJson(url: string): Promise<unknown> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url} responded ${res.status}`);
+  return (await res.json()) as unknown;
+}
+
+function settledValue(result: PromiseSettledResult<unknown>): unknown {
+  return result.status === "fulfilled" ? result.value : null;
+}
+
+function extractArray(payload: unknown, key: string): unknown[] | null {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return null;
+  const candidate = (payload as Record<string, unknown>)[key];
+  return Array.isArray(candidate) ? candidate : null;
+}
+
+function formatTime(value: unknown): string {
+  if (typeof value !== "string" && typeof value !== "number") return "Recently";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function AdminDashboard() {
   const reduceMotion = useReducedMotion();
   const hover = reduceMotion ? undefined : { y: -3 };
   const tap = reduceMotion ? undefined : { scale: 0.99 };
+
+  // Seeded with the current hardcoded values so the page never flashes zeros.
+  // On a failed/empty fetch the fallback is retained.
+  const [stats, setStats] = useState(STATS_FALLBACK);
+  const [recentActivity, setRecentActivity] = useState(RECENT_ACTIVITY_FALLBACK);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      // The 4th result (announcements) has no stat card in the current UI, so it
+      // is fetched but not bound — keeping the endpoint call per the data spec.
+      const [blogRes, projectsRes, productsRes, , messagesRes, faqRes] =
+        await Promise.allSettled([
+          fetchJson("/api/blog?admin=1"),
+          fetchJson("/api/projects?admin=1"),
+          fetchJson("/api/products?admin=1"),
+          fetchJson("/api/announcements?admin=1"),
+          fetchJson("/api/messages"),
+          fetchJson("/api/faq?admin=1"),
+        ]);
+
+      if (cancelled) return;
+
+      const posts = extractArray(settledValue(blogRes), "posts");
+      const projects = extractArray(settledValue(projectsRes), "projects");
+      const products = extractArray(settledValue(productsRes), "products");
+      const messages = extractArray(settledValue(messagesRes), "messages");
+      const faqs = extractArray(settledValue(faqRes), "faqs");
+
+      setStats((current) =>
+        current.map((stat) => {
+          let nextValue: string | null = null;
+          switch (stat.label) {
+            case "Products":
+              nextValue = products ? String(products.length) : null;
+              break;
+            case "Projects":
+              nextValue = projects ? String(projects.length) : null;
+              break;
+            case "Blog Posts":
+              nextValue = posts ? String(posts.length) : null;
+              break;
+            case "FAQs":
+              nextValue = faqs ? String(faqs.length) : null;
+              break;
+            case "Messages":
+              nextValue = messages ? String(messages.length) : null;
+              break;
+            // "Downloads" has no matching API — keep its fallback value.
+            default:
+              nextValue = null;
+          }
+          return nextValue === null ? stat : { ...stat, value: nextValue };
+        })
+      );
+
+      if (messages && messages.length > 0) {
+        const rows = messages.slice(0, 5).map((entry) => {
+          const record =
+            entry && typeof entry === "object"
+              ? (entry as Record<string, unknown>)
+              : {};
+          const rawName = record.name;
+          const rawSubject = record.subject;
+          const name =
+            typeof rawName === "string" && rawName.trim()
+              ? rawName.trim()
+              : "New message";
+          const subject =
+            typeof rawSubject === "string" && rawSubject.trim()
+              ? rawSubject.trim()
+              : "Contact submission";
+          const rawTime = record.createdAt ?? record.created_at ?? record.date;
+          return {
+            action: `${name}: ${subject}`,
+            time: formatTime(rawTime),
+            type: "message",
+          };
+        });
+        setRecentActivity(rows);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div>

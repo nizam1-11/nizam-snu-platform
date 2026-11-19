@@ -1,3 +1,6 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ExternalLink, CheckCircle, Sparkles, Download } from "lucide-react";
 
@@ -202,13 +205,69 @@ A cross-platform data synchronization concept. Details will be shared here as th
   },
 };
 
-export default async function ProjectDetailPage({
+/** Defensively parse a JSON string field coming from D1 (may arrive pre-parsed). */
+function parseJson(value: any, fallback: any) {
+  if (Array.isArray(value) || (value && typeof value === "object")) return value;
+  if (typeof value !== "string") return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+/** Map the public API payload into the exact shape the existing JSX expects. */
+function mapApiProject(api: any, fallback: any) {
+  const techStack = parseJson(api.techStack, []);
+  const features = parseJson(api.features, []);
+  return {
+    title: api.title ?? fallback?.title,
+    description: api.description ?? fallback?.description,
+    longDescription: api.longDescription ?? fallback?.longDescription ?? "",
+    category: api.category ?? fallback?.category,
+    techStack: Array.isArray(techStack) ? techStack : [],
+    features: Array.isArray(features) ? features : [],
+    // D1 has no dedicated logo column — coverImageUrl is the closest available image.
+    iconUrl: api.coverImageUrl ?? api.iconUrl ?? fallback?.iconUrl,
+    githubUrl: api.githubUrl ?? fallback?.githubUrl,
+    projectUrl: api.projectUrl ?? fallback?.projectUrl,
+    status: api.status ?? fallback?.status,
+    screenshots: Array.isArray(api.screenshots) ? api.screenshots : [],
+  };
+}
+
+export default function ProjectDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
-  const project = projectData[slug];
+  const { slug } = use(params);
+  const [project, setProject] = useState<any>(() => projectData[slug] ?? null);
+
+  useEffect(() => {
+    // Reset to this slug's hardcoded fallback on mount/navigation (no-op on mount).
+    setProject(projectData[slug] ?? null);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/projects/${encodeURIComponent(slug)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return; // 404 / server error — keep hardcoded fallback.
+        const data = await res.json();
+        if (!cancelled && data?.project) {
+          setProject(mapApiProject(data.project, projectData[slug]));
+        }
+      } catch {
+        // Network error — keep hardcoded fallback.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   if (!project) {
     return (

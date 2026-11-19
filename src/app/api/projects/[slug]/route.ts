@@ -1,33 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 
-// GET /api/projects/[id] — Get a single project (admin only)
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const guard = await requireAdmin(request);
-  if (guard) return guard;
+type Ctx = { params: Promise<{ slug: string }> };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function dbUnavailable() {
+  return NextResponse.json(
+    { error: "Database unavailable", code: "DB_UNAVAILABLE" },
+    { status: 503 }
+  );
+}
+
+// GET /api/projects/[slug] — public detail by slug (published only);
+// by id (UUID) it requires admin auth so drafts can be edited in admin.
+export async function GET(request: NextRequest, { params }: Ctx) {
   try {
-    const { id } = await params;
+    const { slug: key } = await params;
+    const byId = UUID_RE.test(key);
+    if (byId) {
+      const guard = await requireAdmin(request);
+      if (guard) return guard;
+    }
     const db = await getDbAsync();
-    if (!db) {
+    if (!db) return dbUnavailable();
+
+    const where = byId
+      ? eq(projects.id, key)
+      : and(eq(projects.slug, key), eq(projects.isPublished, true));
+    const rows = await db.select().from(projects).where(where).limit(1);
+    if (!rows[0]) {
       return NextResponse.json(
-        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
-        { status: 503 }
+        { error: "Project not found", code: "NOT_FOUND" },
+        { status: 404 }
       );
     }
-
-    const rows = await db
-      .select()
-      .from(projects)
-      .where(eq(projects.id, id))
-      .limit(1);
-
-    return NextResponse.json({ project: rows[0] ?? null });
+    return NextResponse.json({ project: rows[0] });
   } catch (error) {
     console.error("Project detail error:", error);
     return NextResponse.json(
@@ -37,16 +47,12 @@ export async function GET(
   }
 }
 
-// PUT /api/projects/[id] — Update a project (admin only)
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// PUT /api/projects/[slug] — admin only; accepts slug or id.
+export async function PUT(request: NextRequest, { params }: Ctx) {
   const guard = await requireAdmin(request);
   if (guard) return guard;
   try {
-    const { id } = await params;
-
+    const { slug: key } = await params;
     let body: any;
     try {
       body = await request.json();
@@ -62,28 +68,19 @@ export async function PUT(
         { status: 400 }
       );
     }
-
     const db = await getDbAsync();
-    if (!db) {
-      return NextResponse.json(
-        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
-        { status: 503 }
-      );
-    }
+    if (!db) return dbUnavailable();
 
     const existing = await db
       .select()
       .from(projects)
-      .where(eq(projects.id, id))
+      .where(or(eq(projects.id, key), eq(projects.slug, key)))
       .limit(1);
-    if (existing.length === 0) {
-      return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-    }
+    if (!existing[0]) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
     const now = new Date().toISOString();
     const updateObj: Record<string, any> = {};
-
-    for (const key of [
+    for (const k of [
       "slug",
       "title",
       "description",
@@ -95,32 +92,28 @@ export async function PUT(
       "projectUrl",
       "githubUrl",
     ]) {
-      if (key in body) updateObj[key] = body[key];
+      if (k in body) updateObj[k] = body[k];
     }
-    for (const key of ["techStack", "features"]) {
-      if (key in body) {
-        updateObj[key] = typeof body[key] === "string" ? body[key] : JSON.stringify(body[key]);
+    for (const k of ["techStack", "features"]) {
+      if (k in body) {
+        updateObj[k] = typeof body[k] === "string" ? body[k] : JSON.stringify(body[k]);
       }
     }
     if ("isFeatured" in body) updateObj.isFeatured = Boolean(body.isFeatured);
     if ("isPublished" in body) updateObj.isPublished = Boolean(body.isPublished);
-
     if ("publishedAt" in body) {
       updateObj.publishedAt = body.publishedAt;
     } else if ("isPublished" in body) {
       updateObj.publishedAt = body.isPublished ? now : null;
     }
-
     updateObj.updatedAt = now;
 
-    await db.update(projects).set(updateObj).where(eq(projects.id, id));
-
+    await db.update(projects).set(updateObj).where(eq(projects.id, existing[0].id));
     const updated = await db
       .select()
       .from(projects)
-      .where(eq(projects.id, id))
+      .where(eq(projects.id, existing[0].id))
       .limit(1);
-
     return NextResponse.json({ ok: true, item: updated[0] ?? null });
   } catch (error) {
     console.error("Project update error:", error);
@@ -131,33 +124,21 @@ export async function PUT(
   }
 }
 
-// DELETE /api/projects/[id] — Delete a project (admin only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// DELETE /api/projects/[slug] — admin only; accepts slug or id.
+export async function DELETE(request: NextRequest, { params }: Ctx) {
   const guard = await requireAdmin(request);
   if (guard) return guard;
   try {
-    const { id } = await params;
+    const { slug: key } = await params;
     const db = await getDbAsync();
-    if (!db) {
-      return NextResponse.json(
-        { error: "Database unavailable", code: "DB_UNAVAILABLE" },
-        { status: 503 }
-      );
-    }
-
+    if (!db) return dbUnavailable();
     const existing = await db
       .select()
       .from(projects)
-      .where(eq(projects.id, id))
+      .where(or(eq(projects.id, key), eq(projects.slug, key)))
       .limit(1);
-    if (existing.length === 0) {
-      return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-    }
-
-    await db.delete(projects).where(eq(projects.id, id));
+    if (!existing[0]) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    await db.delete(projects).where(eq(projects.id, existing[0].id));
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Project delete error:", error);

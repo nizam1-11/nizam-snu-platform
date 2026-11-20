@@ -314,6 +314,34 @@ export default function BlogDetailPage({
   const authorName = post.author || "Syed Nizam Uddin";
   const tags: string[] = Array.isArray(post.tags) ? post.tags : [];
 
+  // Internal linking: pick two real posts, preferring shared category/tags.
+  const relatedPosts = Object.keys(postData)
+    .filter((key) => key !== slug)
+    .map((key) => {
+      const candidate = postData[key];
+      const candidateTags: string[] = Array.isArray(candidate.tags)
+        ? candidate.tags.map(String)
+        : [];
+      const shared = tags.filter((tag) =>
+        candidateTags.some(
+          (candidateTag) =>
+            candidateTag.toLowerCase() === String(tag).toLowerCase()
+        )
+      ).length;
+      const categoryMatch =
+        String(candidate.category || "").toLowerCase() ===
+        String(post.category || "").toLowerCase();
+      return {
+        slug: key,
+        title: String(candidate.title || ""),
+        excerpt: String(candidate.excerpt || ""),
+        category: String(candidate.category || ""),
+        score: shared + (categoryMatch ? 1 : 0),
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+
   const blogPostingSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -425,7 +453,12 @@ export default function BlogDetailPage({
                   <div>
                     <p className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
                       <User className="w-3.5 h-3.5 text-accent-electric" />
-                      {post.author || "Syed Nizam Uddin"}
+                      <Link
+                        href="/about"
+                        className="hover:text-accent-blue transition-colors"
+                      >
+                        {post.author || "Syed Nizam Uddin"}
+                      </Link>
                     </p>
                     <p className="text-xs text-text-muted">Author</p>
                   </div>
@@ -503,6 +536,53 @@ export default function BlogDetailPage({
                 </span>
               ))}
             </div>
+          </Reveal>
+
+          {/* Related reading + product context */}
+          <Reveal delay={0.1}>
+            <section className="mt-12 pt-10 border-t border-border">
+              <h2 className="text-2xl font-heading font-bold text-text-primary mb-6">
+                Related reading
+              </h2>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {relatedPosts.map((item) => (
+                  <Link
+                    key={item.slug}
+                    href={`/blog/${item.slug}`}
+                    className="glass gradient-border rounded-2xl p-5 block hover:border-accent-blue/40 transition-colors"
+                  >
+                    <span className="inline-block px-3 py-1 text-xs rounded-full glass text-accent-cyan mb-3">
+                      {item.category}
+                    </span>
+                    <h3 className="text-lg font-heading font-semibold text-text-primary mb-2">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-text-secondary leading-relaxed">
+                      {item.excerpt}
+                    </p>
+                    <span className="inline-block mt-4 text-sm text-accent-electric hover:text-accent-blue transition-colors">
+                      Read article →
+                    </span>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-3 mt-8">
+                <Link
+                  href="/products/snu-automation"
+                  className="inline-flex items-center px-4 py-2 text-sm rounded-full glass gradient-border text-text-primary hover:text-accent-blue transition-colors"
+                >
+                  See the tool behind this guide → SNU Automation
+                </Link>
+                <Link
+                  href="/download"
+                  className="inline-flex items-center px-4 py-2 text-sm rounded-full glass gradient-border text-text-primary hover:text-accent-blue transition-colors"
+                >
+                  Download →
+                </Link>
+              </div>
+            </section>
           </Reveal>
 
           {/* Navigation */}

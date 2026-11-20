@@ -29,11 +29,11 @@ interface SettingsState {
 const DEFAULT_SETTINGS: SettingsState = {
   siteName: "Nizam — SNU Automation",
   siteDescription: "AI Automation Developer & Software Creator",
-  siteUrl: "https://nizam-snu.pages.dev",
+  siteUrl: "https://nizam-snu-platform.nizam-snu-platform.workers.dev",
   contactEmail: "nizam14010@gmail.com",
-  githubUrl: "https://github.com/yourusername",
-  linkedinUrl: "https://linkedin.com/in/yourusername",
-  twitterUrl: "https://twitter.com/yourusername",
+  githubUrl: "https://github.com/nizam1-11",
+  linkedinUrl: "",
+  twitterUrl: "",
   analyticsEnabled: true,
   maintenanceMode: false,
 };

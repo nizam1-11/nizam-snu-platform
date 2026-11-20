@@ -236,6 +236,83 @@ function mapApiProject(api: any, fallback: any) {
   };
 }
 
+/**
+ * Renders D1 longDescription defensively. D1 stores literal backslash-n
+ * sequences in the text, so splitting on a real newline never breaks the
+ * blob into lines and every heading ends up as one giant bold paragraph.
+ * Normalize both the literal escape sequences and real newlines first.
+ */
+function ProjectDescription({ content }: { content: unknown }) {
+  const normalized = String(content ?? "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n");
+
+  if (!normalized.trim()) return null;
+
+  return (
+    <div className="text-base leading-8 text-text-secondary sm:text-lg sm:leading-9">
+      {normalized.split("\n").map((rawLine: string, index: number) => {
+        const line = rawLine.trim();
+
+        // Check the deeper level first so "### " is never caught by "## ".
+        if (line.startsWith("### ")) {
+          return (
+            <h4
+              key={index}
+              className="mb-3 mt-8 font-heading text-lg font-semibold text-text-primary first:mt-0 sm:text-xl"
+            >
+              {line.slice(4)}
+            </h4>
+          );
+        }
+
+        if (line.startsWith("## ")) {
+          const isSoon = /coming soon|roadmap|in development/i.test(line);
+          return (
+            <h3
+              key={index}
+              className="mb-5 mt-10 flex items-center gap-3 font-heading text-2xl font-bold text-text-primary first:mt-0 sm:text-3xl"
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "h-6 w-1 shrink-0 rounded-full",
+                  isSoon
+                    ? "bg-warning"
+                    : "bg-gradient-to-b from-accent-blue to-accent-purple"
+                )}
+              />
+              {line.slice(3)}
+            </h3>
+          );
+        }
+
+        if (line.startsWith("- ")) {
+          return (
+            <div key={index} className="flex gap-3 py-1.5">
+              <span
+                aria-hidden="true"
+                className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-electric ring-4 ring-accent-blue/10"
+              />
+              <span>{line.slice(2)}</span>
+            </div>
+          );
+        }
+
+        if (!line) {
+          return <div key={index} className="h-4" aria-hidden="true" />;
+        }
+
+        return (
+          <p key={index} className="mb-4 last:mb-0">
+            {line}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ProjectDetailPage({
   params,
 }: {
@@ -394,37 +471,10 @@ export default function ProjectDetailPage({
       {/* Content */}
       <section className="px-4 py-12 sm:px-6 lg:px-8">
         <div className="section-container grid grid-cols-1 gap-12 lg:grid-cols-3">
-          {/* Main Content */}
+          {/* Main Content — Overview / long description */}
           <Reveal direction="left" className="lg:col-span-2">
-            <div className="rounded-2xl glass gradient-border p-6 sm:p-8">
-              <div className="leading-relaxed text-text-secondary">
-                {project.longDescription.split("\n").map((line: string, index: number) => {
-                  if (line.startsWith("## ")) {
-                    return (
-                      <h3
-                        key={index}
-                        className="mb-2 mt-6 font-heading text-xl font-bold text-text-primary first:mt-0"
-                      >
-                        {line.replace("## ", "")}
-                      </h3>
-                    );
-                  }
-                  if (line.startsWith("- ")) {
-                    return (
-                      <div key={index} className="ml-4 flex gap-2 py-0.5">
-                        <span className="text-accent-electric">•</span>
-                        <span>{line.replace("- ", "")}</span>
-                      </div>
-                    );
-                  }
-                  if (!line.trim()) return <div key={index} className="h-2" />;
-                  return (
-                    <p key={index} className="mb-2">
-                      {line}
-                    </p>
-                  );
-                })}
-              </div>
+            <div className="rounded-3xl glass gradient-border p-8 sm:p-10 lg:p-12">
+              <ProjectDescription content={project.longDescription} />
             </div>
           </Reveal>
 
@@ -445,25 +495,6 @@ export default function ProjectDetailPage({
                     </span>
                   ))}
                 </div>
-              </div>
-            </StaggerItem>
-
-            <StaggerItem>
-              <div className="rounded-2xl glass gradient-border p-6">
-                <h3 className="mb-4 font-heading text-lg font-bold text-text-primary">
-                  Key Features
-                </h3>
-                <ul className="space-y-3">
-                  {project.features.map((feature: string) => (
-                    <li
-                      key={feature}
-                      className="flex items-start gap-2.5 text-sm text-text-secondary"
-                    >
-                      <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </StaggerItem>
 
@@ -493,6 +524,77 @@ export default function ProjectDetailPage({
               </div>
             </StaggerItem>
           </Stagger>
+        </div>
+      </section>
+
+      {/* Key Features — full-width card grid */}
+      {(project.features?.length ?? 0) > 0 && (
+        <section className="px-4 pb-12 sm:px-6 lg:px-8">
+          <div className="section-container">
+            <Reveal>
+              <div className="rounded-3xl glass gradient-border p-8 sm:p-10 lg:p-12">
+                <div className="mb-8 flex items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="h-7 w-1 shrink-0 rounded-full bg-gradient-to-b from-accent-blue to-accent-purple"
+                  />
+                  <h2 className="font-heading text-2xl font-bold text-text-primary sm:text-3xl">
+                    Key Features
+                  </h2>
+                </div>
+                <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {project.features.map((feature: string) => (
+                    <StaggerItem key={feature}>
+                      <div className="flex h-full items-start gap-3 rounded-2xl bg-surface-elevated/60 p-4 ring-1 ring-inset ring-white/5 transition-colors duration-300 hover:bg-surface-elevated">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-success/15 ring-1 ring-inset ring-success/25">
+                          <CheckCircle className="h-4 w-4 text-success" />
+                        </span>
+                        <span className="text-sm leading-6 text-text-secondary sm:text-base">
+                          {feature}
+                        </span>
+                      </div>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      )}
+
+      {/* Full-width Download CTA */}
+      <section className="px-4 pb-20 sm:px-6 lg:px-8">
+        <div className="section-container">
+          <Reveal>
+            <div className="relative overflow-hidden rounded-3xl glass gradient-border p-8 sm:p-12">
+              <GradientOrb
+                color="blue"
+                size={280}
+                blur={70}
+                opacity={0.22}
+                float
+                className="absolute -right-12 -top-16"
+              />
+              <div className="relative flex flex-col items-start justify-between gap-8 sm:flex-row sm:items-center">
+                <div>
+                  <h2 className="font-heading text-2xl font-bold text-text-primary sm:text-3xl">
+                    Download {project.title}
+                  </h2>
+                  <p className="mt-3 max-w-xl text-base leading-relaxed text-text-secondary">
+                    Continue to the download page to get started.
+                  </p>
+                </div>
+                <Link
+                  href="/download"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-blue to-accent-purple px-8 py-4 text-base font-semibold text-white shadow-lg shadow-accent-blue/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
+                >
+                  <Download className="h-5 w-5" />
+                  Download {project.title}
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
     </div>

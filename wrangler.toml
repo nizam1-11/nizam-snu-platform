@@ -23,5 +23,8 @@ bucket_name = "nizam-snu-storage"
 
 # Environment variables (set as Workers secrets after deploy)
 # BETTER_AUTH_SECRET
-# NEXT_PUBLIC_APP_URL
 # RESEND_API_KEY
+
+# Public vars (NEXT_PUBLIC_* are exposed to the client — this is not a secret)
+[vars]
+NEXT_PUBLIC_APP_URL = "https://nizam-snu-platform.nizam-snu-platform.workers.dev"

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { SiteChrome } from "@/components/layout/SiteChrome";
-import { PersonSchema, OrganizationSchema } from "@/components/seo/StructuredData";
 import { CursorSpotlight } from "@/components/motion/CursorSpotlight";
 import "./globals.css";
 
@@ -50,7 +49,33 @@ const motionOverrideScript = `(function(){try{
   };
 }catch(e){}})();`;
 
+/**
+ * Site-wide structured data. Verified facts only: no invented social profiles,
+ * and no WebSite SearchAction (the search rich result was retired in Nov 2024).
+ */
+const siteJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: "Syed Nizam Uddin",
+    url: "https://nizam-snu-platform.nizam-snu-platform.workers.dev",
+    jobTitle: "AI Automation Developer & Software Creator",
+    description:
+      "Syed Nizam Uddin builds AI-powered applications, business automation systems, and software products. Explore projects, download software, and get in touch.",
+    image: "/images/profile.jpg",
+    sameAs: ["https://github.com/nizam1-11"],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Syed Nizam Uddin — SNU Automation",
+    url: "https://nizam-snu-platform.nizam-snu-platform.workers.dev",
+  },
+];
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://nizam-snu-platform.nizam-snu-platform.workers.dev"),
+  alternates: { canonical: "/" },
   title: {
     default:
       "Syed Nizam Uddin — AI Automation Developer & Software Creator | SNU Automation",
@@ -71,7 +96,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://nizam-snu.pages.dev",
+    url: "https://nizam-snu-platform.nizam-snu-platform.workers.dev",
     siteName: "Syed Nizam Uddin — SNU Automation",
     title: "Syed Nizam Uddin — AI Automation Developer & Software Creator",
     description:
@@ -105,22 +130,12 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: motionOverrideScript }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
       </head>
       <body className="min-h-screen bg-background text-text-primary antialiased">
-        <PersonSchema
-          name="Syed Nizam Uddin"
-          url={process.env.NEXT_PUBLIC_APP_URL || "https://nizam-snu.pages.dev"}
-          jobTitle="AI Automation Developer & Software Creator"
-          sameAs={[
-            "https://github.com/yourusername",
-            "https://linkedin.com/in/yourusername",
-            "https://twitter.com/yourusername",
-          ]}
-        />
-        <OrganizationSchema
-          name="SNU Automation"
-          url={process.env.NEXT_PUBLIC_APP_URL || "https://nizam-snu.pages.dev"}
-        />
         <CursorSpotlight />
         <SiteChrome>{children}</SiteChrome>
       </body>

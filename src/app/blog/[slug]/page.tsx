@@ -4,7 +4,6 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
-import { ArticleSchema } from "@/components/seo/StructuredData";
 import { GradientOrb } from "@/components/interactive";
 import { Reveal } from "@/components/motion/Reveal";
 import {
@@ -309,14 +308,35 @@ export default function BlogDetailPage({
     );
   }
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://nizam-snu-platform.nizam-snu-platform.workers.dev";
+  const authorName = post.author || "Syed Nizam Uddin";
+  const tags: string[] = Array.isArray(post.tags) ? post.tags : [];
+
+  const blogPostingSchema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt || "",
+    author: { "@type": "Person", name: authorName },
+    publisher: { "@type": "Person", name: "Syed Nizam Uddin" },
+    mainEntityOfPage: `${baseUrl}/blog/${slug}`,
+  };
+  if (post.publishedAt) {
+    blogPostingSchema.datePublished = post.publishedAt;
+    blogPostingSchema.dateModified = post.updatedAt || post.publishedAt;
+  }
+  if (tags.length > 0) blogPostingSchema.keywords = tags;
+  if (typeof post.coverImageUrl === "string" && post.coverImageUrl.trim()) {
+    blogPostingSchema.image = new URL(post.coverImageUrl, baseUrl).toString();
+  }
+
   return (
     <div className="min-h-screen bg-bg-base relative overflow-hidden">
-      <ArticleSchema
-        title={post.title}
-        description={post.excerpt}
-        author={post.author || "Syed Nizam Uddin"}
-        datePublished={post.publishedAt}
-        url={`${process.env.NEXT_PUBLIC_APP_URL || "https://nizam-snu.pages.dev"}/blog/${slug}`}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }}
       />
 
       {/* Ambient background */}

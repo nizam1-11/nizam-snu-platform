@@ -451,8 +451,45 @@ export default function ProductDetailPage({
 
   const latestRelease = product.releases[0];
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://nizam-snu-platform.nizam-snu-platform.workers.dev";
+  const applicationCategory = /business|productivity|ai/i.test(
+    String(product.category || "")
+  )
+    ? "BusinessApplication"
+    : "UtilitiesApplication";
+  const rawOs = product.systemRequirements?.OS;
+  const rawLogo = product.logoUrl || product.image || product.logo;
+
+  const softwareSchema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: product.name,
+    description: product.description,
+    applicationCategory,
+    url: `${baseUrl}/products/${slug}`,
+  };
+  if (rawOs) softwareSchema.operatingSystem = String(rawOs);
+  if (typeof rawLogo === "string" && rawLogo.trim()) {
+    softwareSchema.image = new URL(rawLogo, baseUrl).toString();
+  }
+  if (product.licenseType === "freemium" || product.licenseType === "free") {
+    softwareSchema.offers = {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      description: "Freemium — free tier available",
+    };
+  }
+
   return (
     <div className="relative min-h-screen bg-bg-base text-text-primary">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
+
       {/* Ambient background layers */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute inset-0 bg-atmosphere opacity-70" />

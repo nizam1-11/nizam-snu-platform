@@ -120,6 +120,16 @@ SMOKE_BASE_URL=https://your-deployment.workers.dev node scripts/smoke-test.mjs
 
 It checks public pages, public APIs, the admin write-gate, invalid-login handling, and path-traversal rejection. It exits `1` if any check fails. No secrets or database writes are involved.
 
+Also warm the edge cache right after each deploy. The first request to a route can take several seconds on a cold cache (this has caused timeouts on mobile networks); warming makes responses fast for real visitors:
+
+```bash
+node scripts/warm-cache.mjs
+# or against another deployment:
+SMOKE_BASE_URL=https://your-deployment.workers.dev node scripts/warm-cache.mjs
+```
+
+Both scripts are read-only with respect to the database and require no secrets.
+
 ## Known limitations / notes
 
 - No custom domain is attached yet; the site is served from the free `*.workers.dev` URL.

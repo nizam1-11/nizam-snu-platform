@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { ExternalLink, Filter, Sparkles } from "lucide-react";
+import { ArrowRight, Download, ExternalLink, Filter, Sparkles } from "lucide-react";
 
 // GitHub icon (inline SVG since lucide removed brand icons)
 const GithubIcon = ({ className }: { className?: string }) => (
@@ -221,6 +221,54 @@ export default function ProjectsPage() {
                 experiments I&apos;ve built. Each project represents real
                 problem-solving and learning.
               </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Download CTA Banner */}
+      <section
+        className="px-4 pb-8 sm:px-6 lg:px-8"
+        aria-labelledby="projects-download-cta-heading"
+      >
+        <div className="section-container">
+          <Reveal>
+            <div className="relative overflow-hidden rounded-2xl glass gradient-border p-6 sm:p-8">
+              <GradientOrb
+                color="blue"
+                size={260}
+                blur={70}
+                opacity={0.2}
+                float
+                className="absolute -right-10 -top-14"
+              />
+              <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+                <div>
+                  <h2
+                    id="projects-download-cta-heading"
+                    className="font-heading text-xl font-bold text-text-primary sm:text-2xl"
+                  >
+                    Looking for the app?{" "}
+                    <span className="text-gradient-primary">
+                      Download SNU Automation for Windows
+                    </span>
+                  </h2>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-text-secondary sm:text-base">
+                    Head to the download page to get started.
+                  </p>
+                </div>
+                <Link
+                  href="/download"
+                  className="group inline-flex w-full shrink-0 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-accent-blue to-accent-purple px-8 py-4 text-base font-semibold text-white shadow-lg shadow-accent-blue/25 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-accent-blue/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base sm:w-auto"
+                >
+                  <Download className="h-5 w-5" aria-hidden="true" />
+                  Go to Download
+                  <ArrowRight
+                    className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </Link>
+              </div>
             </div>
           </Reveal>
         </div>

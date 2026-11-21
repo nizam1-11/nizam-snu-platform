@@ -1,24 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
+  Box,
   CheckCircle,
   ChevronDown,
   Download,
   Filter,
+  Flower2,
   Globe,
-  Loader2,
   Monitor,
   Package,
   Search,
   Shield,
   Smartphone,
+  Sparkles,
   Terminal,
 } from "lucide-react";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { GradientOrb } from "@/components/interactive";
+import { CoverAmbience } from "@/components/interactive/CoverAmbience";
 import { cn } from "@/lib/utils";
 
 const platformFilters = [
@@ -37,6 +40,14 @@ const licenseColors: Record<string, string> = {
   "open-source": "bg-accent-cyan/20 text-accent-cyan",
 };
 
+const categoryNames: Record<string, string> = {
+  "desktop-app": "Desktop App",
+  automation: "Automation",
+  "ai-tool": "AI Tool",
+  "web-app": "Web App",
+  utility: "Utility",
+};
+
 const platformNames: Record<string, string> = {
   windows: "Windows",
   android: "Android",
@@ -53,6 +64,20 @@ const platformIcons: Record<string, any> = {
   web: Globe,
 };
 
+/** D1 stores features/platforms as a JSON string; tolerate arrays too. */
+function parseStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+    } catch {
+      // Malformed JSON — fall back to no values.
+    }
+  }
+  return [];
+}
+
 // Public download data is loaded from the API at runtime — no fabricated values here.
 type DownloadAsset = {
   id: string;
@@ -62,7 +87,6 @@ type DownloadAsset = {
   fileSize: number;
   sha256: string | null;
   minOsVersion: string | null;
-  downloadCount: number;
 };
 type DownloadRelease = {
   id: string;
@@ -78,15 +102,51 @@ type DownloadProduct = {
   slug: string;
   name: string;
   tagline: string;
+  description: string;
+  logo: string | null;
+  category: string;
   licenseType: string;
-  latestVersion: string;
+  features: string[];
+  supportedPlatforms: string[];
+  isFeatured: boolean;
   releases: DownloadRelease[];
+  /** Stable installer endpoint used when there is no published release asset. */
+  downloadHref: string;
 };
 
-const fallbackProducts: DownloadProduct[] = [];
+/**
+ * The one REAL product, seeded so the page always shows something true even
+ * when the API has no published release. Every field below is existing product
+ * copy from this site — no version, rating, price or download count is invented.
+ */
+const fallbackProducts: DownloadProduct[] = [
+  {
+    id: "snu-automation",
+    slug: "snu-automation",
+    name: "SNU Automation",
+    tagline: "Bulk downloads, Facebook scheduling, and visual workflows in one app",
+    description:
+      "One Windows app for bulk video downloads, Facebook Page scheduling, and visual automation workflows — with an AI assistant that acts on real services, safely and with you in control.",
+    logo: "/images/snu-logo.png",
+    category: "desktop-app",
+    licenseType: "freemium",
+    features: [
+      "Bulk video downloading",
+      "Facebook Page scheduling",
+      "Visual workflow builder",
+    ],
+    supportedPlatforms: ["windows"],
+    isFeatured: true,
+    releases: [],
+    downloadHref: "/api/download/direct",
+  },
+];
 
-/** Map the public API payload into the exact shape the existing JSX expects. */
+const DIRECT_DOWNLOAD_HREF = "/api/download/direct";
+
+/** Map the public API payload into the exact shape the card expects. */
 function mapApiProduct(api: any): DownloadProduct {
+  const fallback = fallbackProducts[0];
   const releases: DownloadRelease[] = (Array.isArray(api.releases) ? api.releases : []).map(
     (release: any) => ({
       id: release.id,
@@ -108,62 +168,174 @@ function mapApiProduct(api: any): DownloadProduct {
           fileSize: Number(asset.fileSize) || 0,
           sha256: asset.sha256,
           minOsVersion: asset.minOsVersion,
-          downloadCount: Number(asset.downloadCount) || 0,
         })),
     })
   );
 
   const latest = releases.find((r) => r.isLatest) || releases[0];
+  const primaryAsset = latest?.assets[0];
+  const apiFeatures = parseStringArray(api.features);
+  const apiPlatforms = parseStringArray(api.supportedPlatforms);
+  const assetPlatforms = Array.from(
+    new Set(
+      releases.flatMap((r) =>
+        r.assets.map((a) => a.platform).filter((p): p is string => Boolean(p))
+      )
+    )
+  );
 
   return {
-    id: api.id,
-    slug: api.slug ?? "snu-automation",
-    name: api.name ?? "",
-    tagline: api.tagline ?? "",
-    licenseType: api.licenseType ?? "",
-    latestVersion: latest?.version ?? "",
+    id: api.id ?? fallback.id,
+    slug: api.slug ?? fallback.slug,
+    name: api.name ?? fallback.name,
+    tagline: api.tagline ?? fallback.tagline,
+    description: api.description ?? fallback.description,
+    logo: api.logoUrl ?? fallback.logo,
+    category: api.category ?? fallback.category,
+    licenseType: api.licenseType ?? fallback.licenseType,
+    features: apiFeatures.length > 0 ? apiFeatures.slice(0, 3) : fallback.features,
+    supportedPlatforms:
+      apiPlatforms.length > 0
+        ? apiPlatforms
+        : assetPlatforms.length > 0
+        ? assetPlatforms
+        : fallback.supportedPlatforms,
+    isFeatured:
+      api.isFeatured === undefined ? fallback.isFeatured : Boolean(api.isFeatured),
     releases,
+    // A real release asset always wins; otherwise use the stable installer link.
+    downloadHref: primaryAsset
+      ? `/api/download/${primaryAsset.id}`
+      : DIRECT_DOWNLOAD_HREF,
   };
 }
 
-/** Status-driven download control — the real href navigation is never blocked. */
-function DownloadButton({ assetId }: { assetId: string }) {
-  const [state, setState] = useState<"idle" | "preparing" | "started">("idle");
+const THANKS_SPARKLES = [
+  { x: -26, y: -16 },
+  { x: 0, y: -26 },
+  { x: 26, y: -16 },
+  { x: -30, y: 8 },
+  { x: 30, y: 8 },
+  { x: -18, y: 24 },
+  { x: 18, y: 24 },
+] as const;
+
+/**
+ * Prominent GET control. Clicking plays a short thank-you bloom first, then
+ * navigates to the installer endpoint (a 302 to the real GitHub release).
+ * It is a real <button> so Enter/Space work, and the thank-you state keeps a
+ * plain <a> fallback in case JS navigation is blocked.
+ */
+function DownloadButton({ href, name }: { href: string; name: string }) {
+  const reduce = useReducedMotion();
+  const [phase, setPhase] = useState<"idle" | "thanks">("idle");
+  const navigating = useRef(false);
 
   useEffect(() => {
-    if (state !== "preparing") return;
-    const timer = window.setTimeout(() => setState("started"), 700);
+    if (phase !== "thanks") return;
+    const timer = window.setTimeout(() => {
+      if (navigating.current) return;
+      navigating.current = true;
+      window.location.href = href;
+    }, reduce ? 180 : 1350);
     return () => window.clearTimeout(timer);
-  }, [state]);
+  }, [phase, href, reduce]);
+
+  if (phase === "thanks") {
+    return (
+      <motion.div
+        role="status"
+        aria-live="polite"
+        initial={reduce ? false : { opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: reduce ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="relative inline-flex min-h-[3.4rem] flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-success/30 bg-success/10 px-5 py-3 text-success"
+      >
+        {!reduce && (
+          <span aria-hidden="true" className="relative grid h-7 w-7 place-items-center">
+            <motion.span
+              initial={{ rotate: -18, scale: 0.6, opacity: 0 }}
+              animate={{ rotate: 0, scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            >
+              <Flower2 className="h-6 w-6 text-accent-electric" />
+            </motion.span>
+            {THANKS_SPARKLES.map((sparkle, i) => (
+              <motion.span
+                key={i}
+                className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-accent-electric"
+                style={{ marginLeft: -2, marginTop: -2 }}
+                initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
+                animate={{
+                  x: sparkle.x,
+                  y: sparkle.y,
+                  opacity: [0, 1, 0],
+                  scale: [0, 1, 0],
+                }}
+                transition={{ duration: 0.7, delay: 0.08 + i * 0.04, ease: "easeOut" }}
+              />
+            ))}
+          </span>
+        )}
+        <span className="text-sm font-medium">Thanks — I&apos;ll save your time.</span>
+        <a
+          href={href}
+          className="text-xs underline underline-offset-4 transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric"
+        >
+          Start download now
+        </a>
+      </motion.div>
+    );
+  }
 
   return (
-    <motion.a
-      href={`/api/download/${assetId}`}
-      onClick={() => setState("preparing")}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.96 }}
+    <motion.button
+      type="button"
+      onClick={() => setPhase("thanks")}
+      whileHover={reduce ? undefined : { y: -2 }}
+      whileTap={reduce ? undefined : { scale: 0.97 }}
+      aria-label={`Download ${name}`}
       className={cn(
-        "shine relative inline-flex shrink-0 items-center gap-2 overflow-hidden rounded-lg px-4 py-2 text-sm font-medium text-white",
-        state === "started"
-          ? "bg-gradient-to-r from-success to-accent-electric"
-          : "bg-gradient-to-r from-accent-blue to-accent-purple shadow-[0_8px_24px_-10px_rgb(var(--rgb-accent-blue)/0.9)]"
+        "shine group relative inline-flex min-h-[3.4rem] shrink-0 items-center gap-3 overflow-hidden rounded-xl px-6 py-3",
+        "bg-gradient-to-r from-accent-purple via-accent-blue to-accent-electric",
+        "text-white ring-1 ring-inset ring-white/15",
+        "shadow-[0_16px_38px_-14px_rgb(var(--rgb-accent-blue)/0.95)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
       )}
     >
-      {state === "preparing" ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : state === "started" ? (
-        <CheckCircle className="h-4 w-4" />
-      ) : (
-        <Download className="h-4 w-4" />
-      )}
-      <span className="relative z-10">
-        {state === "preparing"
-          ? "Preparing"
-          : state === "started"
-          ? "Started"
-          : "Download"}
+      <Download className="relative z-10 h-5 w-5 shrink-0" aria-hidden="true" />
+      <span className="relative z-10 flex flex-col items-start leading-none">
+        <span className="text-lg font-bold tracking-wide">GET</span>
+        <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">
+          Download
+        </span>
       </span>
-    </motion.a>
+    </motion.button>
+  );
+}
+
+/** Logo with a graceful lucide fallback if the real image fails to load. */
+function ProductLogo({ src, name }: { src: string | null; name: string }) {
+  const [failed, setFailed] = useState(!src);
+  useEffect(() => setFailed(!src), [src]);
+
+  if (!src || failed) {
+    return (
+      <span className="relative z-10 grid h-20 w-20 place-items-center rounded-2xl border border-accent-blue/30 bg-surface-deep/80 shadow-[0_10px_30px_-12px_rgb(var(--rgb-accent-blue)/0.9)]">
+        <Box className="h-9 w-9 text-accent-electric" aria-hidden="true" />
+      </span>
+    );
+  }
+
+  return (
+    // Plain img is intentional: the logo comes from a public static path.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={`${name} logo`}
+      onError={() => setFailed(true)}
+      className="relative z-10 h-20 w-20 rounded-2xl border border-white/10 bg-surface-deep/70 object-cover shadow-[0_10px_30px_-12px_rgb(var(--rgb-accent-blue)/0.9)]"
+    />
   );
 }
 
@@ -198,10 +370,275 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+/** One marketplace-style product card. Real releases add expandable details. */
+function ProductCard({
+  product,
+  platformFilter,
+}: {
+  product: DownloadProduct;
+  platformFilter: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const latestRelease =
+    product.releases.find((r) => r.isLatest) || product.releases[0];
+
+  return (
+    <article className="glass gradient-border overflow-hidden rounded-2xl">
+      {/* Cover — the real logo, framed by the site's butterfly/mote ambience */}
+      <div className="relative flex h-40 items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-surface-deep via-surface-card to-bg-secondary">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-br from-accent-blue/10 to-accent-purple/10"
+        />
+        <CoverAmbience />
+        <div
+          aria-hidden="true"
+          className="absolute h-28 w-28 animate-pulse rounded-full bg-accent-electric/15 blur-3xl"
+        />
+        {product.isFeatured && (
+          <span className="absolute right-3 top-3 z-20 inline-flex items-center gap-1 rounded-full border border-accent-violet/30 bg-accent-purple/20 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-accent-violet backdrop-blur glow-purple">
+            <Sparkles className="h-3 w-3" aria-hidden="true" /> Featured
+          </span>
+        )}
+        <ProductLogo src={product.logo} name={product.name} />
+      </div>
+
+      {/* Product details */}
+      <div className="p-6 sm:p-7">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium tracking-wide text-text-secondary">
+            {categoryNames[product.category] ?? product.category}
+          </span>
+          {product.licenseType && (
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[10px] font-medium capitalize",
+                licenseColors[product.licenseType] || "bg-white/10 text-text-secondary"
+              )}
+            >
+              {product.licenseType}
+            </span>
+          )}
+          {product.supportedPlatforms.includes("windows") && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-medium text-text-secondary">
+              <Monitor className="h-3 w-3" aria-hidden="true" /> Windows
+            </span>
+          )}
+        </div>
+
+        <h3 className="font-heading text-2xl font-bold text-text-primary sm:text-[1.7rem]">
+          {product.name}
+        </h3>
+        <p className="mt-1.5 text-sm font-medium text-accent-electric/90">
+          {product.tagline}
+        </p>
+        {product.description && product.description !== product.tagline && (
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-text-secondary">
+            {product.description}
+          </p>
+        )}
+
+        {product.features.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {product.features.map((feature) => (
+              <span
+                key={feature}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-text-secondary"
+              >
+                <CheckCircle className="h-3.5 w-3.5 text-success" aria-hidden="true" />
+                {feature}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Prominent, direct download CTA */}
+        <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <DownloadButton href={product.downloadHref} name={product.name} />
+          <span className="text-xs leading-relaxed text-text-secondary">
+            Starts the official installer download.
+          </span>
+        </div>
+
+        {latestRelease && (
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={expanded}
+            className="mt-5 inline-flex items-center gap-1.5 rounded text-sm text-accent-electric transition-colors hover:text-accent-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric"
+          >
+            {expanded ? "Hide release details" : "Release details"}
+            <motion.span
+              animate={{ rotate: expanded ? 180 : 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="inline-flex"
+            >
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            </motion.span>
+          </button>
+        )}
+      </div>
+
+      {/* Expanded release details — only real API release data is shown here */}
+      <AnimatePresence initial={false}>
+        {expanded && latestRelease && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              height: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+              opacity: { duration: 0.25 },
+            }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border px-6 pb-6 pt-6">
+              <div className="mb-6 flex flex-wrap items-center gap-4">
+                <span className="text-sm text-text-secondary">
+                  Latest Release:{" "}
+                  <span className="font-medium text-text-primary">
+                    v{latestRelease.version}
+                  </span>
+                </span>
+                <span className="text-sm text-text-secondary">
+                  {latestRelease.releaseDate}
+                </span>
+                <StatusBadge status={latestRelease.status} />
+              </div>
+
+              <div className="mb-6 space-y-3">
+                <h4 className="text-sm font-semibold text-text-primary">
+                  Available Downloads
+                </h4>
+                {latestRelease.assets
+                  .filter(
+                    (a) =>
+                      platformFilter === "all" || a.platform === platformFilter
+                  )
+                  .map((asset) => {
+                    const Icon =
+                      platformIcons[asset.platform ?? "unknown"] || Monitor;
+                    return (
+                      <div
+                        key={asset.id}
+                        className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/5 bg-surface-deep/60 p-4 transition-colors hover:border-accent-blue/20"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="grid h-10 w-10 place-items-center rounded-lg border border-accent-blue/20 bg-accent-blue/10">
+                            <Icon className="h-5 w-5 text-accent-blue" />
+                          </span>
+                          <div>
+                            <div className="text-sm font-medium text-text-primary">
+                              {platformNames[asset.platform ?? "unknown"]}{" "}
+                              {asset.architecture && `(${asset.architecture})`}
+                            </div>
+                            <div className="text-xs text-text-secondary">
+                              {asset.fileType?.toUpperCase()} •{" "}
+                              {asset.fileSize > 0
+                                ? `${(asset.fileSize / 1000000).toFixed(1)} MB`
+                                : "Web App"}{" "}
+                              {asset.minOsVersion && `• ${asset.minOsVersion}+`}
+                            </div>
+                          </div>
+                        </div>
+
+                        <DownloadButton
+                          href={`/api/download/${asset.id}`}
+                          name={`${product.name} (${platformNames[asset.platform ?? "unknown"]})`}
+                        />
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {latestRelease.releaseNotes && (
+                <div className="mb-6">
+                  <h4 className="mb-2 text-sm font-semibold text-text-primary">
+                    Release Notes
+                  </h4>
+                  <p className="text-sm leading-relaxed text-text-secondary">
+                    {latestRelease.releaseNotes}
+                  </p>
+                </div>
+              )}
+
+              {latestRelease.assets.some((a) => a.sha256) && (
+                <div>
+                  <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-primary">
+                    <Shield className="h-4 w-4 text-accent-electric" aria-hidden="true" />
+                    SHA-256 Checksums
+                  </h4>
+                  <div className="space-y-3">
+                    {latestRelease.assets
+                      .filter((a) => a.sha256)
+                      .map((asset) => (
+                        <div key={asset.id} className="space-y-1.5">
+                          <div className="text-xs font-medium text-text-secondary">
+                            {platformNames[asset.platform ?? "unknown"]} (
+                            {asset.architecture})
+                          </div>
+                          <code className="block break-all rounded-lg border border-white/5 bg-surface-deep/80 p-3 font-mono text-xs leading-relaxed text-accent-electric">
+                            {asset.sha256}
+                          </code>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {product.releases.length > 1 && (
+                <div className="mt-6 border-t border-border pt-6">
+                  <h4 className="mb-3 text-sm font-semibold text-text-primary">
+                    Previous Versions
+                  </h4>
+                  <div className="space-y-2">
+                    {product.releases
+                      .filter((r) => !r.isLatest)
+                      .map((release) => (
+                        <div
+                          key={release.id}
+                          className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-text-primary">
+                              v{release.version}
+                            </span>
+                            <span className="text-xs text-text-secondary">
+                              {release.releaseDate}
+                            </span>
+                          </div>
+                          <Link
+                            href={`/products/${product.slug}`}
+                            className="text-xs text-accent-electric transition-colors hover:text-accent-blue"
+                          >
+                            View Details
+                          </Link>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 border-t border-border pt-6">
+                <Link
+                  href={`/products/${product.slug}`}
+                  className="group inline-flex items-center gap-2 text-sm text-accent-electric transition-colors hover:text-accent-blue"
+                >
+                  View Full Product Page
+                  <ChevronDown className="h-4 w-4 -rotate-90 transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </article>
+  );
+}
+
 export default function DownloadCenterPage() {
   const [platformFilter, setPlatformFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [products, setProducts] = useState<DownloadProduct[]>(() => fallbackProducts);
 
   useEffect(() => {
@@ -212,15 +649,15 @@ export default function DownloadCenterPage() {
         const res = await fetch("/api/products/snu-automation", {
           cache: "no-store",
         });
-        if (!res.ok) return; // API error — keep the empty fallback.
+        if (!res.ok) return; // API error — keep the real fallback card.
         const data = await res.json();
         if (cancelled || !data?.product) return;
         const mapped = mapApiProduct(data.product);
-        // Only render products that actually have releases; otherwise the
-        // existing empty-state markup below does the talking.
-        setProducts(mapped.releases.length > 0 ? [mapped] : []);
+        // Prefer a real published release (and its real asset id). With none,
+        // keep the real fallback card pointing at the stable installer link.
+        setProducts(mapped.releases.length > 0 ? [mapped] : fallbackProducts);
       } catch {
-        // Network error — keep the empty fallback (no fabricated data).
+        // Network error — keep the real fallback card (no fabricated data).
       }
     })();
 
@@ -230,12 +667,15 @@ export default function DownloadCenterPage() {
   }, []);
 
   const filteredProducts = products.filter((product) => {
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.tagline.toLowerCase().includes(searchQuery.toLowerCase());
+      product.name.toLowerCase().includes(query) ||
+      product.tagline.toLowerCase().includes(query) ||
+      product.description.toLowerCase().includes(query);
 
     const matchesPlatform =
       platformFilter === "all" ||
+      product.supportedPlatforms.includes(platformFilter) ||
       product.releases.some((r) =>
         r.assets.some((a) => a.platform === platformFilter)
       );
@@ -354,253 +794,27 @@ export default function DownloadCenterPage() {
         <section className="py-8 px-4 sm:px-6 lg:px-8 pb-24">
           <div className="section-container">
             <Stagger className="space-y-6">
-              {filteredProducts.map((product) => {
-                const latestRelease =
-                  product.releases.find((r) => r.isLatest) ||
-                  product.releases[0];
-                const isExpanded = expandedProduct === product.id;
-
-                return (
-                  <StaggerItem key={product.id}>
-                    <div className="glass gradient-border overflow-hidden rounded-2xl">
-                      {/* Product Header */}
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        aria-expanded={isExpanded}
-                        onClick={() =>
-                          setExpandedProduct(isExpanded ? null : product.id)
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            setExpandedProduct(isExpanded ? null : product.id);
-                          }
-                        }}
-                        className="group flex cursor-pointer items-center justify-between gap-4 p-6 transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-electric"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple shadow-[0_8px_24px_-10px_rgb(var(--rgb-accent-blue))]">
-                            <Package className="h-6 w-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-heading text-lg font-bold text-text-primary transition-colors group-hover:text-accent-electric">
-                              {product.name}
-                            </h3>
-                            <p className="text-sm text-text-secondary">
-                              {product.tagline}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex shrink-0 items-center gap-3">
-                          {product.licenseType && (
-                            <span
-                              className={cn(
-                                "hidden rounded-full px-2.5 py-1 text-xs font-medium capitalize sm:inline-block",
-                                licenseColors[product.licenseType]
-                              )}
-                            >
-                              {product.licenseType}
-                            </span>
-                          )}
-                          {product.latestVersion && (
-                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-xs text-text-secondary">
-                              v{product.latestVersion}
-                            </span>
-                          )}
-                          <motion.span
-                            animate={{ rotate: isExpanded ? 180 : 0 }}
-                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                            className="inline-flex text-text-secondary"
-                          >
-                            <ChevronDown className="h-5 w-5" />
-                          </motion.span>
-                        </div>
-                      </div>
-
-                      {/* Expanded Content */}
-                      <AnimatePresence initial={false}>
-                        {isExpanded && latestRelease && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{
-                              height: {
-                                duration: 0.35,
-                                ease: [0.22, 1, 0.36, 1],
-                              },
-                              opacity: { duration: 0.25 },
-                            }}
-                            className="overflow-hidden"
-                          >
-                            <div className="border-t border-border px-6 pb-6 pt-6">
-                              {/* Release Info */}
-                              <div className="mb-6 flex flex-wrap items-center gap-4">
-                                <span className="text-sm text-text-secondary">
-                                  Latest Release:{" "}
-                                  <span className="font-medium text-text-primary">
-                                    v{latestRelease.version}
-                                  </span>
-                                </span>
-                                <span className="text-sm text-text-secondary">
-                                  {latestRelease.releaseDate}
-                                </span>
-                                <StatusBadge status={latestRelease.status} />
-                              </div>
-
-                              {/* Download Assets */}
-                              <div className="mb-6 space-y-3">
-                                <h4 className="text-sm font-semibold text-text-primary">
-                                  Available Downloads
-                                </h4>
-                                {latestRelease.assets
-                                  .filter(
-                                    (a) =>
-                                      platformFilter === "all" ||
-                                      a.platform === platformFilter
-                                  )
-                                  .map((asset) => {
-                                    const Icon =
-                                      platformIcons[asset.platform ?? "unknown"] || Monitor;
-                                    return (
-                                      <div
-                                        key={asset.id}
-                                        className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/5 bg-surface-deep/60 p-4 transition-colors hover:border-accent-blue/20"
-                                      >
-                                        <div className="flex items-center gap-3">
-                                          <span className="grid h-10 w-10 place-items-center rounded-lg border border-accent-blue/20 bg-accent-blue/10">
-                                            <Icon className="h-5 w-5 text-accent-blue" />
-                                          </span>
-                                          <div>
-                                            <div className="text-sm font-medium text-text-primary">
-                                              {platformNames[asset.platform ?? "unknown"]}{" "}
-                                              {asset.architecture &&
-                                                `(${asset.architecture})`}
-                                            </div>
-                                            <div className="text-xs text-text-secondary">
-                                              {asset.fileType?.toUpperCase()} •{" "}
-                                              {asset.fileSize > 0
-                                                ? `${(asset.fileSize / 1000000).toFixed(1)} MB`
-                                                : "Web App"}{" "}
-                                              {asset.minOsVersion &&
-                                                `• ${asset.minOsVersion}+`}
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                          {asset.downloadCount > 0 && (
-                                            <span className="text-xs text-text-secondary">
-                                              {asset.downloadCount.toLocaleString()}{" "}
-                                              downloads
-                                            </span>
-                                          )}
-                                          <DownloadButton assetId={asset.id} />
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
-
-                              {/* Release Notes */}
-                              {latestRelease.releaseNotes && (
-                                <div className="mb-6">
-                                  <h4 className="mb-2 text-sm font-semibold text-text-primary">
-                                    Release Notes
-                                  </h4>
-                                  <p className="text-sm leading-relaxed text-text-secondary">
-                                    {latestRelease.releaseNotes}
-                                  </p>
-                                </div>
-                              )}
-
-                              {/* SHA-256 Checksums */}
-                              {latestRelease.assets.some((a) => a.sha256) && (
-                                <div>
-                                  <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-primary">
-                                    <Shield className="h-4 w-4 text-accent-electric" />
-                                    SHA-256 Checksums
-                                  </h4>
-                                  <div className="space-y-3">
-                                    {latestRelease.assets
-                                      .filter((a) => a.sha256)
-                                      .map((asset) => (
-                                        <div key={asset.id} className="space-y-1.5">
-                                          <div className="text-xs font-medium text-text-secondary">
-                                            {platformNames[asset.platform ?? "unknown"]} (
-                                            {asset.architecture})
-                                          </div>
-                                          <code className="block break-all rounded-lg border border-white/5 bg-surface-deep/80 p-3 font-mono text-xs leading-relaxed text-accent-electric">
-                                            {asset.sha256}
-                                          </code>
-                                        </div>
-                                      ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Previous Versions */}
-                              {product.releases.length > 1 && (
-                                <div className="mt-6 border-t border-border pt-6">
-                                  <h4 className="mb-3 text-sm font-semibold text-text-primary">
-                                    Previous Versions
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {product.releases
-                                      .filter((r) => !r.isLatest)
-                                      .map((release) => (
-                                        <div
-                                          key={release.id}
-                                          className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-3"
-                                        >
-                                          <div className="flex items-center gap-3">
-                                            <span className="text-sm font-medium text-text-primary">
-                                              v{release.version}
-                                            </span>
-                                            <span className="text-xs text-text-secondary">
-                                              {release.releaseDate}
-                                            </span>
-                                          </div>
-                                          <Link
-                                            href={`/products/${product.slug}`}
-                                            className="text-xs text-accent-electric transition-colors hover:text-accent-blue"
-                                          >
-                                            View Details
-                                          </Link>
-                                        </div>
-                                      ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* View Product Page Link */}
-                              <div className="mt-6 border-t border-border pt-6">
-                                <Link
-                                  href={`/products/${product.slug}`}
-                                  className="group inline-flex items-center gap-2 text-sm text-accent-electric transition-colors hover:text-accent-blue"
-                                >
-                                  View Full Product Page
-                                  <ChevronDown className="h-4 w-4 -rotate-90 transition-transform duration-300 group-hover:translate-x-1" />
-                                </Link>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </StaggerItem>
-                );
-              })}
+              {filteredProducts.map((product) => (
+                <StaggerItem key={product.id}>
+                  <ProductCard product={product} platformFilter={platformFilter} />
+                </StaggerItem>
+              ))}
             </Stagger>
 
             {filteredProducts.length === 0 && (
               <div className="glass gradient-border rounded-2xl py-16 text-center">
                 <Search className="mx-auto mb-3 h-8 w-8 text-text-muted" />
-                <p className="text-text-secondary">
-                  No products found matching your criteria.
-                </p>
+                <p className="text-text-secondary">No products match those filters.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setPlatformFilter("all");
+                  }}
+                  className="mt-4 rounded-lg border border-accent-blue/30 bg-accent-blue/10 px-4 py-2 text-sm font-medium text-accent-electric transition-colors hover:bg-accent-blue/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric"
+                >
+                  Clear filters
+                </button>
               </div>
             )}
           </div>

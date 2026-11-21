@@ -23,6 +23,7 @@ const TwitterIcon = () => (
 const footerLinks = {
   Product: [
     { href: "/products", label: "Products" },
+    { href: "/showcase", label: "Showcase" },
     { href: "/download", label: "Download Center" },
     { href: "/whats-new", label: "What's New" },
     { href: "/support", label: "Support" },

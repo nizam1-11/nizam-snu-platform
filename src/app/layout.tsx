@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { SiteChrome } from "@/components/layout/SiteChrome";
+import { AIAssistant } from "@/components/interactive/AIAssistant";
 import { CursorSpotlight } from "@/components/motion/CursorSpotlight";
 import "./globals.css";
 
@@ -138,6 +139,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-background text-text-primary antialiased">
         <CursorSpotlight />
         <SiteChrome>{children}</SiteChrome>
+        <AIAssistant />
       </body>
     </html>
   );

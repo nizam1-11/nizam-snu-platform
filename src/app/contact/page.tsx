@@ -170,26 +170,50 @@ export default function ContactPage() {
                     </div>
                   ))}
 
-                  {/* WhatsApp — a dedicated card so its link opens in a new tab
-                      without altering the shared email/location card logic. */}
-                  <div className="flex items-center gap-4 group">
-                    <div className="w-11 h-11 shrink-0 rounded-xl glass gradient-border flex items-center justify-center text-accent-electric transition-colors group-hover:text-accent-blue">
-                      <WhatsAppIcon className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs uppercase tracking-wider text-text-muted mb-0.5">
+                  {/* WhatsApp — dedicated animated CTA so one click opens wa.me
+                      in a new tab without touching the shared info-card logic. */}
+                  <motion.a
+                    href="https://wa.me/923239163815?text=Hi%20Nizam%2C%20I%27d%20like%20to%20discuss%20a%20project"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Chat on WhatsApp at +923239163815"
+                    className="group relative flex items-center gap-4 rounded-2xl glass gradient-border p-3.5 cursor-pointer border border-accent-electric/15 hover:border-accent-electric/50 hover:bg-surface-elevated/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+                    animate={reduceMotion ? undefined : { y: [0, -5, 0] }}
+                    transition={
+                      reduceMotion
+                        ? undefined
+                        : { duration: 4.5, ease: "easeInOut", repeat: Infinity }
+                    }
+                    whileHover={reduceMotion ? undefined : { scale: 1.025 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                  >
+                    {/* Pulsing glow ring — always on unless reduced motion. */}
+                    <span className="relative flex w-11 h-11 shrink-0 items-center justify-center">
+                      {!reduceMotion && (
+                        <motion.span
+                          aria-hidden="true"
+                          className="absolute inset-0 rounded-xl border border-accent-electric/60 shadow-[0_0_16px_-2px_rgb(216_164_107_/_0.55)]"
+                          animate={{ scale: [1, 1.45], opacity: [0.75, 0] }}
+                          transition={{
+                            duration: 2,
+                            ease: "easeOut",
+                            repeat: Infinity,
+                          }}
+                        />
+                      )}
+                      <span className="relative w-11 h-11 rounded-xl glass gradient-border flex items-center justify-center text-accent-electric transition-colors group-hover:text-accent-blue">
+                        <WhatsAppIcon className="w-5 h-5" />
+                      </span>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs uppercase tracking-wider text-text-muted mb-0.5">
                         WhatsApp
-                      </p>
-                      <a
-                        href="https://wa.me/923239163815?text=Hi%20Nizam%2C%20I%27d%20like%20to%20discuss%20a%20project"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-text-primary hover:text-accent-blue transition-colors truncate block"
-                      >
+                      </span>
+                      <span className="text-sm text-text-primary group-hover:text-accent-blue transition-colors truncate block">
                         +923239163815
-                      </a>
-                    </div>
-                  </div>
+                      </span>
+                    </span>
+                  </motion.a>
                 </div>
               </div>
 

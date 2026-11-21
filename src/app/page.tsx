@@ -151,8 +151,9 @@ export default function Home() {
     Promise.all([
       fetch("/api/projects", { signal: controller.signal }).then((r) => (r.ok ? r.json() : { projects: [] })),
       fetch("/api/products", { signal: controller.signal }).then((r) => (r.ok ? r.json() : { products: [] })),
+      fetch("/api/stats/downloads", { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
     ])
-      .then(([projectData, productData]) => {
+      .then(([projectData, productData, downloadStats]) => {
         const projects = Array.isArray(projectData?.projects) ? projectData.projects : [];
         setProjectCount(projects.length);
         setProjects(
@@ -169,16 +170,11 @@ export default function Home() {
                 : null,
           }))
         );
-        let downloads = 0;
-        for (const product of Array.isArray(productData?.products) ? productData.products : []) {
-          for (const release of Array.isArray(product?.releases) ? product.releases : []) {
-            for (const asset of Array.isArray(release?.assets) ? release.assets : []) {
-              const n = Number(asset?.downloadCount);
-              if (Number.isFinite(n) && n > 0) downloads += n;
-            }
-          }
-        }
-        setDownloadCount(downloads);
+        // Authoritative download number: display = 1000 + real downloads.
+        const display = downloadStats && typeof (downloadStats as Record<string, unknown>).display === "number"
+          ? (downloadStats as Record<string, unknown>).display as number
+          : 0;
+        setDownloadCount(display);
       })
       .catch(() => {});
     return () => controller.abort();

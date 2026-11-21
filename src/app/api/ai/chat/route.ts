@@ -34,7 +34,7 @@ STYLE:
 - Reply in the same language as the question (English or Urdu).`;
 
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent";
 
 // Graceful, honest responses — no key / no fake AI answer and no leaked errors.
 const NOT_CONFIGURED_REPLY =

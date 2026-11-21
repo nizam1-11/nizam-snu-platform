@@ -92,7 +92,7 @@ export default function AdminDashboard() {
     async function load() {
       // The 4th result (announcements) has no stat card in the current UI, so it
       // is fetched but not bound — keeping the endpoint call per the data spec.
-      const [blogRes, projectsRes, productsRes, , messagesRes, faqRes] =
+      const [blogRes, projectsRes, productsRes, , messagesRes, faqRes, downloadsRes] =
         await Promise.allSettled([
           fetchJson("/api/blog?admin=1"),
           fetchJson("/api/projects?admin=1"),
@@ -100,6 +100,7 @@ export default function AdminDashboard() {
           fetchJson("/api/announcements?admin=1"),
           fetchJson("/api/messages"),
           fetchJson("/api/faq?admin=1"),
+          fetchJson("/api/stats/downloads"),
         ]);
 
       if (cancelled) return;
@@ -109,6 +110,18 @@ export default function AdminDashboard() {
       const products = extractArray(settledValue(productsRes), "products");
       const messages = extractArray(settledValue(messagesRes), "messages");
       const faqs = extractArray(settledValue(faqRes), "faqs");
+
+      // Authoritative download count. Keep the fallback if the endpoint fails
+      // or returns an unexpected shape — never fabricate a number.
+      const downloadsPayload = settledValue(downloadsRes);
+      const downloadsRecord =
+        downloadsPayload && typeof downloadsPayload === "object"
+          ? (downloadsPayload as Record<string, unknown>)
+          : null;
+      const downloadsDisplay =
+        downloadsRecord && typeof downloadsRecord.display === "number"
+          ? String(downloadsRecord.display)
+          : null;
 
       setStats((current) =>
         current.map((stat) => {
@@ -129,7 +142,9 @@ export default function AdminDashboard() {
             case "Messages":
               nextValue = messages ? String(messages.length) : null;
               break;
-            // "Downloads" has no matching API — keep its fallback value.
+            case "Downloads":
+              nextValue = downloadsDisplay;
+              break;
             default:
               nextValue = null;
           }

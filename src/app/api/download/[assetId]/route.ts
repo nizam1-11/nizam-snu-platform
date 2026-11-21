@@ -1,12 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
-import { releaseAssets } from "@/lib/db/schema";
+import { releaseAssets, settings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 // Real installer fallback. Used when there is no published R2 release, the
 // requested asset does not exist, or the database is unavailable.
 const DIRECT_DOWNLOAD_URL =
   "https://github.com/nizam1-11/snu-automation-releases/releases/latest/download/SNU-Automation-Setup-2.6.10.exe";
+
+// Global counter key stored in the settings key/value table. The public stats
+// endpoint adds DISPLAY_BASE (1000) to this real count when displaying it.
+const DOWNLOAD_COUNT_KEY = "download_count";
+
+async function bumpDownloadCount(db: any) {
+  try {
+    const rows = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, DOWNLOAD_COUNT_KEY))
+      .limit(1);
+    const current = Number(rows[0]?.value ?? 0) || 0;
+    const next = String(current + 1);
+    const now = new Date().toISOString();
+    if (rows[0]) {
+      await db
+        .update(settings)
+        .set({ value: next, updatedAt: now })
+        .where(eq(settings.key, DOWNLOAD_COUNT_KEY));
+    } else {
+      await db
+        .insert(settings)
+        .values({ key: DOWNLOAD_COUNT_KEY, value: next, updatedAt: now });
+    }
+  } catch (e) {
+    console.error("counter failed", e);
+  }
+}
 
 // GET /api/download/[assetId] — public lookup + 302 redirect to the asset URL
 export async function GET(
@@ -16,14 +45,29 @@ export async function GET(
   try {
     const { assetId } = await params;
 
-    // Stable alias: never touches the DB, always serves the real installer.
+    // Stable alias: always serves the real installer. Count it like any other
+    // download (best-effort) — a DB failure must never block the redirect.
     if (assetId === "direct") {
+      try {
+        const aliasDb = await getDbAsync();
+        if (aliasDb) await bumpDownloadCount(aliasDb);
+      } catch (e) {
+        console.error("counter init failed", e);
+      }
       return NextResponse.redirect(new URL(DIRECT_DOWNLOAD_URL, request.url), 302);
     }
 
     const db = await getDbAsync();
     if (!db) {
       // A DB failure must never block the download — serve the real installer.
+      // Still attempt a best-effort count via a fresh handle in case the first
+      // lookup was transiently unavailable.
+      try {
+        const fallbackDb = await getDbAsync();
+        if (fallbackDb) await bumpDownloadCount(fallbackDb);
+      } catch (e) {
+        console.error("counter init failed", e);
+      }
       return NextResponse.redirect(new URL(DIRECT_DOWNLOAD_URL, request.url), 302);
     }
 
@@ -44,6 +88,7 @@ export async function GET(
 
     // No published release for this id — give the user the real installer instead of a 404.
     if (!asset) {
+      await bumpDownloadCount(db);
       return NextResponse.redirect(new URL(DIRECT_DOWNLOAD_URL, request.url), 302);
     }
 
@@ -56,6 +101,9 @@ export async function GET(
     } catch (counterError) {
       console.error("Download counter update failed:", counterError);
     }
+
+    // Also count this download in the global counter read by /api/stats/downloads.
+    await bumpDownloadCount(db);
 
     // Works for absolute URLs (GitHub/R2) and for relative /api/files/... paths.
     return NextResponse.redirect(new URL(asset.downloadUrl, request.url), 302);

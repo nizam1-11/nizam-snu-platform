@@ -211,13 +211,18 @@ function mapApiProduct(api: any): DownloadProduct {
 }
 
 const THANKS_SPARKLES = [
-  { x: -26, y: -16 },
-  { x: 0, y: -26 },
-  { x: 26, y: -16 },
-  { x: -30, y: 8 },
-  { x: 30, y: 8 },
-  { x: -18, y: 24 },
-  { x: 18, y: 24 },
+  { x: -30, y: -20, size: 3, rotate: -40, delay: 0.06, duration: 0.86 },
+  { x: 0, y: -32, size: 4, rotate: 25, delay: 0.12, duration: 0.96 },
+  { x: 30, y: -20, size: 3, rotate: -20, delay: 0.09, duration: 0.82 },
+  { x: -36, y: 8, size: 2, rotate: 35, delay: 0.16, duration: 0.92 },
+  { x: 36, y: 8, size: 3, rotate: -30, delay: 0.14, duration: 1.0 },
+  { x: -20, y: 26, size: 4, rotate: 45, delay: 0.2, duration: 0.88 },
+  { x: 20, y: 26, size: 2, rotate: -50, delay: 0.18, duration: 0.94 },
+  { x: -12, y: -24, size: 2, rotate: 60, delay: 0.24, duration: 0.78 },
+  { x: 12, y: -24, size: 3, rotate: -60, delay: 0.22, duration: 0.9 },
+  { x: 0, y: 28, size: 2, rotate: 30, delay: 0.26, duration: 0.84 },
+  { x: -38, y: -4, size: 2, rotate: -35, delay: 0.28, duration: 0.94 },
+  { x: 38, y: -4, size: 3, rotate: 40, delay: 0.3, duration: 0.9 },
 ] as const;
 
 /**
@@ -246,44 +251,185 @@ function DownloadButton({ href, name }: { href: string; name: string }) {
       <motion.div
         role="status"
         aria-live="polite"
-        initial={reduce ? false : { opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={reduce ? false : { opacity: 0, scale: 0.96, y: 4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: reduce ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="relative inline-flex min-h-[3.4rem] flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-success/30 bg-success/10 px-5 py-3 text-success"
+        className="relative inline-flex min-h-[3.4rem] flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-accent-electric/30 bg-surface-deep/80 px-5 py-3 text-text-primary shadow-[0_18px_44px_-22px_rgb(var(--rgb-accent-electric)/0.45)] backdrop-blur"
       >
+        {/* Gentle copper radial glow pulsing behind the message */}
         {!reduce && (
-          <span aria-hidden="true" className="relative grid h-7 w-7 place-items-center">
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-xl"
+            style={{
+              background:
+                "radial-gradient(70% 140% at 22% 50%, rgb(var(--rgb-accent-electric) / 0.22), transparent 72%)",
+            }}
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: [0, 0.95, 0.5, 0.85], scale: [0.94, 1.06, 1, 1.02] }}
+            transition={{
+              duration: 1.25,
+              times: [0, 0.35, 0.7, 1],
+              ease: "easeInOut",
+            }}
+          />
+        )}
+
+        {!reduce && (
+          <span aria-hidden="true" className="relative grid h-8 w-8 shrink-0 place-items-center">
+            {/* Bloom behind the flower */}
             <motion.span
-              initial={{ rotate: -18, scale: 0.6, opacity: 0 }}
-              animate={{ rotate: 0, scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="absolute inset-0 rounded-full"
+              style={{
+                background:
+                  "radial-gradient(circle, rgb(var(--rgb-accent-electric) / 0.4), transparent 70%)",
+              }}
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: [0.4, 1.3, 1], opacity: [0, 0.9, 0.35] }}
+              transition={{ duration: 0.9, times: [0, 0.5, 1], ease: "easeOut" }}
+            />
+
+            {/* Flower blooms, tilts, then yields to the final check */}
+            <motion.span
+              className="relative inline-flex"
+              initial={{ rotate: -25, scale: 0.5, opacity: 0, y: 4 }}
+              animate={{
+                rotate: [-25, 8, 0, 0],
+                scale: [0.5, 1.12, 1, 0.9],
+                opacity: [0, 1, 1, 0],
+                y: [4, 0, 0, -2],
+              }}
+              transition={{
+                duration: 1.35,
+                times: [0, 0.3, 0.78, 1],
+                ease: "easeOut",
+              }}
             >
               <Flower2 className="h-6 w-6 text-accent-electric" />
             </motion.span>
+
+            {/* Staggered sparkle dust — float, rotate, fade, scale-in */}
             {THANKS_SPARKLES.map((sparkle, i) => (
               <motion.span
                 key={i}
-                className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-accent-electric"
-                style={{ marginLeft: -2, marginTop: -2 }}
-                initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
+                className="absolute left-1/2 top-1/2 rounded-full bg-accent-electric"
+                style={{
+                  width: sparkle.size,
+                  height: sparkle.size,
+                  marginLeft: -sparkle.size / 2,
+                  marginTop: -sparkle.size / 2,
+                }}
+                initial={{ x: 0, y: 6, opacity: 0, scale: 0, rotate: 0 }}
                 animate={{
                   x: sparkle.x,
-                  y: sparkle.y,
-                  opacity: [0, 1, 0],
-                  scale: [0, 1, 0],
+                  y: [6, sparkle.y - 4, sparkle.y, sparkle.y - 2],
+                  opacity: [0, 1, 1, 0],
+                  scale: [0, 1, 1, 0.4],
+                  rotate: sparkle.rotate,
                 }}
-                transition={{ duration: 0.7, delay: 0.08 + i * 0.04, ease: "easeOut" }}
+                transition={{
+                  duration: sparkle.duration,
+                  delay: sparkle.delay,
+                  times: [0, 0.25, 0.7, 1],
+                  ease: "easeOut",
+                }}
               />
             ))}
+
+            {/* Two tiny Sparkles glyphs drift in for extra delight */}
+            <motion.span
+              className="absolute -left-1.5 -top-1.5 text-accent-electric/90"
+              initial={{ scale: 0, opacity: 0, rotate: -40, y: 4 }}
+              animate={{
+                scale: [0, 1, 1, 0.5],
+                opacity: [0, 1, 1, 0],
+                rotate: [-40, -30, -25, -20],
+                y: [4, -2, -5, -8],
+              }}
+              transition={{
+                duration: 1.0,
+                delay: 0.18,
+                times: [0, 0.3, 0.7, 1],
+                ease: "easeOut",
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+            </motion.span>
+            <motion.span
+              className="absolute -bottom-1.5 -right-1.5 text-accent-electric/80"
+              initial={{ scale: 0, opacity: 0, rotate: 30, y: -2 }}
+              animate={{
+                scale: [0, 1, 1, 0.5],
+                opacity: [0, 1, 1, 0],
+                rotate: [30, 22, 18, 15],
+                y: [-2, 1, 3, -4],
+              }}
+              transition={{
+                duration: 1.05,
+                delay: 0.26,
+                times: [0, 0.3, 0.7, 1],
+                ease: "easeOut",
+              }}
+            >
+              <Sparkles className="h-3 w-3" />
+            </motion.span>
+
+            {/* Final micro-beat: expanding ring + golden check right before navigation */}
+            <motion.span
+              className="absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full border border-accent-electric/60"
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: [0.4, 1.9], opacity: [0.9, 0] }}
+              transition={{ delay: 1.02, duration: 0.5, ease: "easeOut" }}
+            />
+            <motion.span
+              className="absolute left-1/2 top-1/2 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center"
+              initial={{ scale: 0, opacity: 0, rotate: -30 }}
+              animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 1], rotate: [-30, 10, 0] }}
+              transition={{
+                delay: 1.02,
+                duration: 0.38,
+                times: [0, 0.6, 1],
+                ease: "easeOut",
+              }}
+            >
+              <span
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background:
+                    "radial-gradient(circle, rgb(var(--rgb-accent-electric) / 0.35), transparent 70%)",
+                }}
+              />
+              <CheckCircle className="relative h-7 w-7 text-accent-electric" />
+            </motion.span>
           </span>
         )}
-        <span className="text-sm font-medium">Thanks — I&apos;ll save your time.</span>
-        <a
-          href={href}
-          className="text-xs underline underline-offset-4 transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric"
-        >
-          Start download now
-        </a>
+
+        <span className="relative z-10 flex flex-col gap-1">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-sm font-medium">I promise I will save your time.</span>
+            <a
+              href={href}
+              className="text-xs underline underline-offset-4 transition-colors hover:text-accent-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric"
+            >
+              Start download now
+            </a>
+          </span>
+          {!reduce && (
+            <span className="flex items-center gap-2" aria-hidden="true">
+              <span className="text-[11px] font-medium tracking-wide text-accent-electric/80">
+                Preparing your download…
+              </span>
+              <span className="relative h-1 w-24 overflow-hidden rounded-full bg-white/10">
+                <motion.span
+                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent-blue to-accent-electric"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 1.15, delay: 0.12, ease: "easeInOut" }}
+                />
+              </span>
+            </span>
+          )}
+        </span>
       </motion.div>
     );
   }

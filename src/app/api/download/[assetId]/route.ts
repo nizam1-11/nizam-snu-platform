@@ -3,10 +3,38 @@ import { getDbAsync } from "@/lib/db";
 import { releaseAssets, settings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-// Real installer fallback. Used when there is no published R2 release, the
-// requested asset does not exist, or the database is unavailable.
-const DIRECT_DOWNLOAD_URL =
-  "https://github.com/nizam1-11/snu-automation-releases/releases/latest/download/SNU-Automation-Setup-2.6.10.exe";
+// Resolve the real installer URL at request time from GitHub's latest release.
+// Used when there is no published R2 release, the requested asset does not
+// exist, or the database is unavailable. Never hardcode a version/filename —
+// match the asset by name pattern instead.
+const GITHUB_API =
+  "https://api.github.com/repos/nizam1-11/snu-automation-releases/releases/latest";
+// Fallback only if the GitHub API fails: a pinned known-good current asset.
+const FALLBACK_URL =
+  "https://github.com/nizam1-11/snu-automation-releases/releases/download/v2.6.11/SNU-Automation-Setup-2.6.11.exe";
+
+async function resolveInstallerUrl(): Promise<string> {
+  try {
+    const res = await fetch(GITHUB_API, {
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "snu-portfolio" },
+      signal: AbortSignal.timeout(6000),
+      next: { revalidate: 300 }, // cache 5 min
+    });
+    if (!res.ok) return FALLBACK_URL;
+    const data: any = await res.json();
+    const assets: any[] = Array.isArray(data?.assets) ? data.assets : [];
+    const exe = assets.find(
+      (a) =>
+        typeof a?.name === "string" &&
+        /^SNU-Automation-Setup-.*\.exe$/i.test(a.name) &&
+        !/blockmap/i.test(a.name)
+    );
+    if (exe?.browser_download_url) return exe.browser_download_url;
+    return FALLBACK_URL;
+  } catch {
+    return FALLBACK_URL;
+  }
+}
 
 // Global counter key stored in the settings key/value table. The public stats
 // endpoint adds DISPLAY_BASE (1000) to this real count when displaying it.
@@ -54,7 +82,8 @@ export async function GET(
       } catch (e) {
         console.error("counter init failed", e);
       }
-      return NextResponse.redirect(new URL(DIRECT_DOWNLOAD_URL, request.url), 302);
+      const url = await resolveInstallerUrl();
+      return NextResponse.redirect(new URL(url, request.url), 302);
     }
 
     const db = await getDbAsync();
@@ -68,7 +97,8 @@ export async function GET(
       } catch (e) {
         console.error("counter init failed", e);
       }
-      return NextResponse.redirect(new URL(DIRECT_DOWNLOAD_URL, request.url), 302);
+      const url = await resolveInstallerUrl();
+      return NextResponse.redirect(new URL(url, request.url), 302);
     }
 
     const rows = await db
@@ -89,7 +119,8 @@ export async function GET(
     // No published release for this id — give the user the real installer instead of a 404.
     if (!asset) {
       await bumpDownloadCount(db);
-      return NextResponse.redirect(new URL(DIRECT_DOWNLOAD_URL, request.url), 302);
+      const url = await resolveInstallerUrl();
+      return NextResponse.redirect(new URL(url, request.url), 302);
     }
 
     // Increment the real download counter (best-effort; never block the download).

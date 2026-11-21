@@ -30,9 +30,8 @@ const PRIMARY_CTA =
 const SECONDARY_CTA =
   "inline-flex items-center justify-center gap-2.5 rounded-xl glass border border-accent-electric/20 px-8 py-4 font-medium text-text-primary transition-colors duration-300 hover:border-accent-electric/50 hover:bg-surface-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-electric focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base";
 
-/** Verbatim release link from the copy doc (kept on one line for exactness). */
-const FINAL_CTA_URL =
-  "https://github.com/nizam1-11/snu-automation-releases/releases/tag/v2.6.10";
+/** Download is served from this site's own release queue (R2), not GitHub. */
+const FINAL_CTA_URL = "/download";
 
 /* ── Static content — transcribed from docs/snu-showcase-copy.md ─────── */
 
@@ -547,12 +546,10 @@ export default function ShowcasePage() {
                 <div className="mt-8">
                   <a
                     href={FINAL_CTA_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className={PRIMARY_CTA}
                   >
                     <Monitor aria-hidden="true" className="h-5 w-5" />
-                    Download v2.6.10 for Windows
+                    Download for Windows
                   </a>
                 </div>
               </div>

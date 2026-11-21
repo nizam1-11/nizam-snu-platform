@@ -114,7 +114,7 @@ Windows may show a SmartScreen warning because the installer is not code-signed 
 
 Keep your weekly posting steady without repeating the same manual steps.
 
-[Download v2.6.10 for Windows](https://github.com/nizam1-11/snu-automation-releases/releases/tag/v2.6.10)
+[Download for Windows](/download)
 
 ---
 

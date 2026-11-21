@@ -11,18 +11,31 @@ type D1Database = any;
  * - Locally: use better-sqlite3 against ./local.db, loaded via createRequire
  *   so Next's bundler doesn't intercept the native addon.
  */
+// Module-level cache of the resolved D1-backed db. `getCloudflareContext` can
+// intermittently fail during cold starts (the binding is not ready yet), so we
+// retry a few times and then remember the result for the lifetime of the
+// isolate. This removes random 503s caused by a transient context failure.
+let cachedDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
+
 export async function getDbAsync(d1Binding?: D1Database) {
   if (d1Binding) return drizzle(d1Binding, { schema });
+  if (cachedDb) return cachedDb;
 
   // Cloudflare Workers: D1 binding is available via OpenNext's context.
-  // Try it unconditionally — `CF_PAGES` is NOT set on Workers, and the import
-  // is dynamic so local dev never loads the Cloudflare-only module.
-  try {
-    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-    const { env } = await getCloudflareContext({ async: true });
-    if (env?.DB) return drizzle(env.DB as D1Database, { schema });
-  } catch {
-    // Not in a Cloudflare context — fall through to local SQLite.
+  // Try unconditionally (CF_PAGES is not set on Workers). Retry briefly to
+  // survive the cold-start window where the context is not ready yet.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+      const { env } = await getCloudflareContext({ async: true });
+      if (env?.DB) {
+        cachedDb = drizzle(env.DB as D1Database, { schema });
+        return cachedDb;
+      }
+    } catch {
+      // Not ready yet (or not in a CF context) — retry, then fall through.
+    }
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 25 * (attempt + 1)));
   }
 
   return getDbLocal();

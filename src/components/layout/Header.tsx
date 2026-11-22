@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, X, Download } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Magnetic } from "@/components/interactive";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -111,19 +110,6 @@ export function Header() {
             })}
           </div>
 
-          {/* Download CTA */}
-          <div className="hidden lg:block">
-            <Magnetic>
-              <Link
-                href="/download"
-                className="shine group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-accent-blue to-accent-purple px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-accent-blue/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-accent-purple/30 focus-visible:ring-2 focus-visible:ring-accent-electric focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
-              >
-                <Download className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                Download
-              </Link>
-            </Magnetic>
-          </div>
-
           {/* Mobile toggle */}
           <button
             type="button"
@@ -169,14 +155,6 @@ export function Header() {
                   </Link>
                 );
               })}
-              <Link
-                href="/download"
-                onClick={() => setMobileOpen(false)}
-                className="mt-2 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-blue to-accent-purple px-3 py-2.5 text-base font-semibold text-white shadow-lg shadow-accent-blue/25 focus-visible:ring-2 focus-visible:ring-accent-electric"
-              >
-                <Download className="h-4 w-4" />
-                Download
-              </Link>
             </nav>
           </motion.div>
         )}

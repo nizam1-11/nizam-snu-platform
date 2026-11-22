@@ -154,6 +154,26 @@ function MockupScreen({ product }: { product: Product }) {
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [downloadCount, setDownloadCount] = useState<number | null>(null);
+
+  // Site-wide download count from the public stats endpoint. Kept separate
+  // from product data so every card can show the same real total.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/stats/downloads", { signal: controller.signal })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error("Downloads request failed"))
+      )
+      .then((data: { display?: number }) => {
+        if (typeof data.display === "number") setDownloadCount(data.display);
+      })
+      .catch(() => {
+        // Keep null on error so the existing per-card fallback still applies.
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -385,7 +405,10 @@ export default function ProductsPage() {
                               <div className="flex items-center justify-between border-t border-border pt-4">
                                 <span className="inline-flex items-center gap-1.5 text-xs text-text-secondary">
                                   <Download className="h-3.5 w-3.5" />
-                                  {product.downloadCount.toLocaleString()} downloads
+                                  {downloadCount !== null
+                                    ? downloadCount.toLocaleString()
+                                    : product.downloadCount.toLocaleString()}{" "}
+                                  downloads
                                 </span>
                                 <span className="inline-flex items-center gap-1 text-sm font-medium text-accent-blue transition-colors duration-300 group-hover:text-accent-electric">
                                   View Details

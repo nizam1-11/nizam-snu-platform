@@ -10,6 +10,7 @@ import {
   FolderKanban,
   FileText,
   HelpCircle,
+  Megaphone,
   Mail,
   Settings,
   Download,
@@ -29,6 +30,7 @@ const adminNav = [
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },
   { href: "/admin/blog", label: "Blog", icon: FileText },
   { href: "/admin/faq", label: "FAQ", icon: HelpCircle },
+  { href: "/admin/announcements", label: "What's New", icon: Megaphone },
   { href: "/admin/messages", label: "Messages", icon: Mail },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

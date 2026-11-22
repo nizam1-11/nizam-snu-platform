@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { productSchema } from "@/lib/validators/product";
 import { getDbAsync } from "@/lib/db";
-import { products, productScreenshots } from "@/lib/db/schema";
-import { eq, desc, like, and } from "drizzle-orm";
+import { products, productScreenshots, releases, releaseAssets } from "@/lib/db/schema";
+import { eq, desc, like, and, inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 
 // GET /api/products — List published products (public); admin=1 lists all
@@ -47,7 +47,53 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    return NextResponse.json({ products: results, page, limit });
+    // Best-effort: attach releases (with assets) so the client needs only ONE
+    // request instead of N per-product detail fetches. If the release lookup
+    // fails, still return the products with empty releases — never break the listing.
+    const byProduct = new Map<string, any[]>();
+    try {
+      const ids = results.map((p: any) => p.id);
+      if (ids.length > 0) {
+        const rels = await db
+          .select()
+          .from(releases)
+          .where(inArray(releases.productId, ids))
+          .orderBy(desc(releases.releaseDate));
+        const assets = rels.length
+          ? await db
+              .select()
+              .from(releaseAssets)
+              .where(inArray(releaseAssets.releaseId, rels.map((r: any) => r.id)))
+          : [];
+
+        for (const r of rels) {
+          const list = byProduct.get(r.productId) || [];
+          list.push({ ...r, assets: assets.filter((a: any) => a.releaseId === r.id) });
+          byProduct.set(r.productId, list);
+        }
+      }
+    } catch (releaseError) {
+      console.error("Products list: releases lookup failed:", releaseError);
+      // Fall back to empty releases for all products.
+    }
+
+    return NextResponse.json(
+      {
+        products: results.map((p: any) => ({
+          ...p,
+          releases: byProduct.get(p.id) || [],
+        })),
+        page,
+        limit,
+      },
+      {
+        headers: {
+          "Cache-Control": isAdmin
+            ? "no-store"
+            : "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("Products list error:", error);
     return NextResponse.json(

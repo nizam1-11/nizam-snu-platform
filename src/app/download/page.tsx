@@ -808,38 +808,21 @@ export default function DownloadCenterPage() {
 
     (async () => {
       try {
-        // The public list endpoint returns published products WITHOUT their
-        // releases, so fetch each product's detail (which includes releases
-        // and their real assets) before mapping it for the download cards.
-        const res = await fetch("/api/products", { cache: "no-store" });
+        // The public list endpoint now returns published products WITH their
+        // releases (and each release's real assets) in one response, so the
+        // cards are built from this single request — no per-product round trips.
+        const res = await fetch("/api/products");
         if (!res.ok) return; // API error — keep the real fallback card.
         const data = await res.json();
         const list = Array.isArray(data?.products) ? data.products : [];
         if (cancelled || list.length === 0) return;
 
-        const mapped = await Promise.all(
-          list.map(async (item: any) => {
-            const key = item?.slug ?? item?.id;
-            if (!key) return null;
-            try {
-              const detailRes = await fetch(
-                `/api/products/${encodeURIComponent(key)}`,
-                { cache: "no-store" }
-              );
-              if (!detailRes.ok) return null;
-              const detail = await detailRes.json();
-              return detail?.product ? mapApiProduct(detail.product) : null;
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        if (cancelled) return;
-        const withReleases = mapped.filter(
-          (product): product is DownloadProduct =>
-            Boolean(product && product.releases.length > 0)
-        );
+        const withReleases = list
+          .map((item: any) => mapApiProduct(item))
+          .filter(
+            (product: DownloadProduct): product is DownloadProduct =>
+              Boolean(product && product.releases.length > 0)
+          );
         // Show every published product with a real release. On error/empty,
         // keep the real fallback card pointing at the stable installer link.
         if (withReleases.length > 0) setProducts(withReleases);

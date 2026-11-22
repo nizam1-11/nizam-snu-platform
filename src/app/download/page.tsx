@@ -87,6 +87,8 @@ type DownloadAsset = {
   fileSize: number;
   sha256: string | null;
   minOsVersion: string | null;
+  /** Real installer URL from the asset (e.g. /api/download/clipper). */
+  downloadUrl: string;
 };
 type DownloadRelease = {
   id: string;
@@ -168,12 +170,23 @@ function mapApiProduct(api: any): DownloadProduct {
           fileSize: Number(asset.fileSize) || 0,
           sha256: asset.sha256,
           minOsVersion: asset.minOsVersion,
+          downloadUrl: typeof asset.downloadUrl === "string" ? asset.downloadUrl : "",
         })),
     })
   );
 
   const latest = releases.find((r) => r.isLatest) || releases[0];
   const primaryAsset = latest?.assets[0];
+  // Prefer a real internal installer endpoint (e.g. /api/download/clipper);
+  // otherwise keep the asset-id endpoint (which counts + redirects) as before.
+  const primaryAssetHref =
+    primaryAsset &&
+    typeof primaryAsset.downloadUrl === "string" &&
+    primaryAsset.downloadUrl.startsWith("/api/download/")
+      ? primaryAsset.downloadUrl
+      : primaryAsset
+      ? `/api/download/${primaryAsset.id}`
+      : DIRECT_DOWNLOAD_HREF;
   const apiFeatures = parseStringArray(api.features);
   const apiPlatforms = parseStringArray(api.supportedPlatforms);
   const assetPlatforms = Array.from(
@@ -203,10 +216,9 @@ function mapApiProduct(api: any): DownloadProduct {
     isFeatured:
       api.isFeatured === undefined ? fallback.isFeatured : Boolean(api.isFeatured),
     releases,
-    // A real release asset always wins; otherwise use the stable installer link.
-    downloadHref: primaryAsset
-      ? `/api/download/${primaryAsset.id}`
-      : DIRECT_DOWNLOAD_HREF,
+    // A real internal installer URL wins; otherwise use the asset-id endpoint,
+    // and fall back to the stable installer link when there is no published asset.
+    downloadHref: primaryAssetHref,
   };
 }
 
@@ -689,7 +701,11 @@ function ProductCard({
                         </div>
 
                         <DownloadButton
-                          href={`/api/download/${asset.id}`}
+                          href={
+                            asset.downloadUrl.startsWith("/api/download/")
+                              ? asset.downloadUrl
+                              : `/api/download/${asset.id}`
+                          }
                           name={`${product.name} (${platformNames[asset.platform ?? "unknown"]})`}
                         />
                       </div>
@@ -792,16 +808,41 @@ export default function DownloadCenterPage() {
 
     (async () => {
       try {
-        const res = await fetch("/api/products/snu-automation", {
-          cache: "no-store",
-        });
+        // The public list endpoint returns published products WITHOUT their
+        // releases, so fetch each product's detail (which includes releases
+        // and their real assets) before mapping it for the download cards.
+        const res = await fetch("/api/products", { cache: "no-store" });
         if (!res.ok) return; // API error — keep the real fallback card.
         const data = await res.json();
-        if (cancelled || !data?.product) return;
-        const mapped = mapApiProduct(data.product);
-        // Prefer a real published release (and its real asset id). With none,
+        const list = Array.isArray(data?.products) ? data.products : [];
+        if (cancelled || list.length === 0) return;
+
+        const mapped = await Promise.all(
+          list.map(async (item: any) => {
+            const key = item?.slug ?? item?.id;
+            if (!key) return null;
+            try {
+              const detailRes = await fetch(
+                `/api/products/${encodeURIComponent(key)}`,
+                { cache: "no-store" }
+              );
+              if (!detailRes.ok) return null;
+              const detail = await detailRes.json();
+              return detail?.product ? mapApiProduct(detail.product) : null;
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        if (cancelled) return;
+        const withReleases = mapped.filter(
+          (product): product is DownloadProduct =>
+            Boolean(product && product.releases.length > 0)
+        );
+        // Show every published product with a real release. On error/empty,
         // keep the real fallback card pointing at the stable installer link.
-        setProducts(mapped.releases.length > 0 ? [mapped] : fallbackProducts);
+        if (withReleases.length > 0) setProducts(withReleases);
       } catch {
         // Network error — keep the real fallback card (no fabricated data).
       }
@@ -867,8 +908,8 @@ export default function DownloadCenterPage() {
                 Download <span className="text-gradient-primary">Center</span>
               </h1>
               <p className="mx-auto max-w-2xl text-lg leading-relaxed text-text-secondary">
-                Download the latest releases of SNU Automation. Each release includes
-                its version, release notes, and download details where available.
+                Download the latest releases of SNU Automation and SNU Clipper. Each
+                release includes its version, release notes, and download details where available.
               </p>
             </Reveal>
           </div>

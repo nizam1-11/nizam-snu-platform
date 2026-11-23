@@ -3,18 +3,27 @@ import { getDbAsync } from "@/lib/db";
 import { announcements } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getCached, setCached } from "@/lib/server-cache";
 
 // GET /api/announcements — List published announcements (public); admin=1 lists all
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const isAdmin = searchParams.get("admin") === "1";
+    const cacheKey = `announcements:${request.nextUrl.search}`;
     if (isAdmin) {
       const guard = await requireAdmin(request);
       if (guard) return guard;
     }
     const category = searchParams.get("category");
     const limit = parseInt(searchParams.get("limit") || (isAdmin ? "100" : "20"));
+
+    const publicHeaders = { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" };
+
+    if (!isAdmin) {
+      const hit = getCached<any>(cacheKey);
+      if (hit) return NextResponse.json(hit, { headers: publicHeaders });
+    }
 
     const db = await getDbAsync();
 
@@ -35,7 +44,11 @@ export async function GET(request: NextRequest) {
       ? results.filter((a: any) => a.category === category)
       : results;
 
-    return NextResponse.json({ announcements: filtered });
+    const payload = { announcements: filtered };
+    if (!isAdmin) setCached(cacheKey, payload);
+    return NextResponse.json(payload, {
+      headers: isAdmin ? { "Cache-Control": "no-store" } : publicHeaders,
+    });
   } catch (error) {
     console.error("Announcements list error:", error);
     return NextResponse.json(

@@ -148,13 +148,20 @@ export default function Home() {
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.all([
-      fetch("/api/projects", { signal: controller.signal }).then((r) => (r.ok ? r.json() : { projects: [] })),
-      fetch("/api/products", { signal: controller.signal }).then((r) => (r.ok ? r.json() : { products: [] })),
-      fetch("/api/stats/downloads", { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
-    ])
-      .then(([projectData, productData, downloadStats]) => {
-        const projects = Array.isArray(projectData?.projects) ? projectData.projects : [];
+    // One request replaces the previous four connections on mount.
+    fetch("/api/home", { signal: controller.signal })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error("Home request failed"))
+      )
+      .then((payload: {
+        products?: Record<string, unknown>[];
+        projects?: Record<string, unknown>[];
+        downloads?: { real?: number; display?: number };
+      }) => {
+        // ── Projects (exact mapping from the former projects effect) ──
+        const projects = Array.isArray(payload?.projects) ? payload.projects : [];
         setProjectCount(projects.length);
         setProjects(
           projects.map((item: Record<string, unknown>) => ({
@@ -170,26 +177,16 @@ export default function Home() {
                 : null,
           }))
         );
-        // Authoritative download number: display = 1000 + real downloads.
-        const display = downloadStats && typeof (downloadStats as Record<string, unknown>).display === "number"
-          ? (downloadStats as Record<string, unknown>).display as number
-          : 0;
-        setDownloadCount(display);
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/products", { signal: controller.signal })
-      .then((response) =>
-        response.ok
-          ? response.json()
-          : Promise.reject(new Error("Products request failed"))
-      )
-      .then((data: { products?: Record<string, unknown>[] }) => {
-        const fromApi = Array.isArray(data.products) ? data.products : [];
+        // Authoritative download number: display = 1000 + real downloads.
+        const display =
+          payload?.downloads && typeof payload.downloads.display === "number"
+            ? payload.downloads.display
+            : 0;
+        setDownloadCount(display);
+
+        // ── Products (exact mapping from the former products effect) ──
+        const fromApi = Array.isArray(payload?.products) ? payload.products : [];
         const mapped: HomeProduct[] = fromApi
           .map((item) => {
             const licenseType = String(item.licenseType || "free");
@@ -221,7 +218,7 @@ export default function Home() {
         }
       })
       .catch(() => {
-        // Keep the real SNU Automation fallback on load/error.
+        // Keep initial fallbacks: SNU Automation product, empty projects, 0 downloads.
       });
     return () => controller.abort();
   }, []);

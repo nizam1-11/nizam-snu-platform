@@ -3,12 +3,14 @@ import { getDbAsync } from "@/lib/db";
 import { projects, projectScreenshots } from "@/lib/db/schema";
 import { eq, desc, like, and } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getCached, setCached } from "@/lib/server-cache";
 
 // GET /api/projects — List published projects (public); admin=1 lists all
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const isAdmin = searchParams.get("admin") === "1";
+    const cacheKey = `projects:${request.nextUrl.search}`;
     if (isAdmin) {
       const guard = await requireAdmin(request);
       if (guard) return guard;
@@ -18,6 +20,13 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || (isAdmin ? "100" : "20"));
     const offset = (page - 1) * limit;
+
+    const publicHeaders = { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" };
+
+    if (!isAdmin) {
+      const hit = getCached<any>(cacheKey);
+      if (hit) return NextResponse.json(hit, { headers: publicHeaders });
+    }
 
     const db = await getDbAsync();
 
@@ -43,7 +52,11 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    return NextResponse.json({ projects: results, page, limit });
+    const payload = { projects: results, page, limit };
+    if (!isAdmin) setCached(cacheKey, payload);
+    return NextResponse.json(payload, {
+      headers: isAdmin ? { "Cache-Control": "no-store" } : publicHeaders,
+    });
   } catch (error) {
     console.error("Projects list error:", error);
     return NextResponse.json(

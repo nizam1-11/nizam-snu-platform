@@ -5,12 +5,14 @@ import { getDbAsync } from "@/lib/db";
 import { products, productScreenshots, releases, releaseAssets } from "@/lib/db/schema";
 import { eq, desc, like, and, inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getCached, setCached } from "@/lib/server-cache";
 
 // GET /api/products — List published products (public); admin=1 lists all
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const isAdmin = searchParams.get("admin") === "1";
+    const cacheKey = `products:${request.nextUrl.search}`;
     if (isAdmin) {
       const guard = await requireAdmin(request);
       if (guard) return guard;
@@ -20,6 +22,13 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || (isAdmin ? "100" : "20"));
     const offset = (page - 1) * limit;
+
+    const publicHeaders = { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" };
+
+    if (!isAdmin) {
+      const hit = getCached<any>(cacheKey);
+      if (hit) return NextResponse.json(hit, { headers: publicHeaders });
+    }
 
     const db = await getDbAsync();
 
@@ -77,23 +86,23 @@ export async function GET(request: NextRequest) {
       // Fall back to empty releases for all products.
     }
 
-    return NextResponse.json(
-      {
-        products: results.map((p: any) => ({
-          ...p,
-          releases: byProduct.get(p.id) || [],
-        })),
-        page,
-        limit,
+    const payload = {
+      products: results.map((p: any) => ({
+        ...p,
+        releases: byProduct.get(p.id) || [],
+      })),
+      page,
+      limit,
+    };
+
+    if (!isAdmin) setCached(cacheKey, payload);
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": isAdmin
+          ? "no-store"
+          : "public, s-maxage=60, stale-while-revalidate=300",
       },
-      {
-        headers: {
-          "Cache-Control": isAdmin
-            ? "no-store"
-            : "public, s-maxage=60, stale-while-revalidate=300",
-        },
-      }
-    );
+    });
   } catch (error) {
     console.error("Products list error:", error);
     return NextResponse.json(

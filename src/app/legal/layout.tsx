@@ -8,7 +8,9 @@ import { Reveal } from "@/components/motion/Reveal";
 import { cn } from "@/lib/utils";
 
 const legalPages = [
-  { href: "/legal/privacy", label: "Privacy Policy" },
+  { href: "/legal/privacy", label: "Privacy Policies" },
+  { href: "/legal/privacy/snu-automation", label: "— SNU Automation" },
+  { href: "/legal/privacy/snu-clipper", label: "— SNU Clipper" },
   { href: "/legal/terms", label: "Terms of Service" },
   { href: "/legal/cookies", label: "Cookie Policy" },
   { href: "/legal/disclaimer", label: "Disclaimer" },

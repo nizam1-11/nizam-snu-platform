@@ -6,6 +6,7 @@ import { products, productScreenshots, releases, releaseAssets } from "@/lib/db/
 import { eq, desc, like, and, inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCached, setCached } from "@/lib/server-cache";
+import { getLatestRelease } from "@/lib/github-latest";
 
 // GET /api/products — List published products (public); admin=1 lists all
 export async function GET(request: NextRequest) {
@@ -29,6 +30,12 @@ export async function GET(request: NextRequest) {
       const hit = getCached<any>(cacheKey);
       if (hit) return NextResponse.json(hit, { headers: publicHeaders });
     }
+
+    // Start the GitHub-latest lookups on the public path only, in parallel with
+    // the D1 work below, so enrichment adds no extra round-trip latency.
+    const latestP = isAdmin
+      ? Promise.resolve([null, null] as const)
+      : Promise.all([getLatestRelease("automation"), getLatestRelease("clipper")]);
 
     const db = await getDbAsync();
 
@@ -86,11 +93,33 @@ export async function GET(request: NextRequest) {
       // Fall back to empty releases for all products.
     }
 
+    const [autoLatest, clipLatest] = await latestP;
+
+    const publicProducts = results.map((p: any) => {
+      const base: any = { ...p, releases: byProduct.get(p.id) || [] };
+      if (isAdmin) return base;
+      const latest = p.slug === "snu-automation" ? autoLatest : p.slug === "snu-clipper" ? clipLatest : null;
+      if (!latest) return base;
+      return {
+        ...base,
+        releases: base.releases.map((r: any, idx: number) => {
+          const isLatestRelease = r.isLatest === true || (idx === 0 && base.releases.length === 1);
+          if (!isLatestRelease) return r;
+          return {
+            ...r,
+            version: latest.version,
+            // Only automation's latest.yml has a valid .exe size. Clipper's
+            // latest.yml points to a .zip, so keep D1's fileSize for it.
+            assets: latest.size
+              ? r.assets.map((a: any) => ({ ...a, fileSize: latest.size }))
+              : r.assets,
+          };
+        }),
+      };
+    });
+
     const payload = {
-      products: results.map((p: any) => ({
-        ...p,
-        releases: byProduct.get(p.id) || [],
-      })),
+      products: publicProducts,
       page,
       limit,
     };
